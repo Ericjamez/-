@@ -26,6 +26,12 @@ def verify_captcha(captcha_input):
     """验证图形验证码"""
     return session.get('captcha') == captcha_input
 
+@auth_bp.route('/generate-captcha')
+def generate_captcha_route():
+    """生成图形验证码"""
+    captcha = generate_captcha()
+    return jsonify({'success': True, 'captcha': captcha})
+
 # ==================== 路由：F001 用户注册 ====================
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -42,58 +48,63 @@ def register():
         contact = phone if contact_type == 'phone' else email
         verification_code = request.form.get('verification_code', '').strip()
         
-        errors = []
+        # 错误信息字典，按字段分类
+        field_errors = {
+            'username': [],
+            'password': [],
+            'confirm_password': [],
+            'contact': [],
+            'verification_code': []
+        }
         
         # 1. 验证用户名
         if not username:
-            errors.append('用户名不能为空')
+            field_errors['username'].append('用户名不能为空')
         elif len(username) < 3 or len(username) > 20:
-            errors.append('用户名长度应为3-20个字符')
+            field_errors['username'].append('用户名长度应为3-20个字符')
         elif User.query.filter_by(username=username).first():
-            errors.append('用户名已存在')
+            field_errors['username'].append('用户名已存在')
         
         # 2. 验证密码
         if not password:
-            errors.append('密码不能为空')
+            field_errors['password'].append('密码不能为空')
         else:
             is_valid, msg = User.validate_password_strength(password)
             if not is_valid:
-                errors.append(msg)
+                field_errors['password'].append(msg)
         
         if password != confirm_password:
-            errors.append('两次密码输入不一致')
+            field_errors['confirm_password'].append('两次密码输入不一致')
         
-        # 3. 验证联系方式（手机号或邮箱）
+        # 3. 验证邮箱
         if not contact:
-            errors.append('请填写手机号或邮箱')
+            field_errors['contact'].append('请填写邮箱')
         else:
-            if contact_type == 'phone':
-                if not validate_phone(phone):
-                    errors.append('手机号格式不正确')
-                elif User.query.filter_by(phone=phone).first():
-                    errors.append('该手机号已注册')
-            else:  # email
-                try:
-                    validate_email(email)
-                    if User.query.filter_by(email=email).first():
-                        errors.append('该邮箱已注册')
-                except EmailNotValidError:
-                    errors.append('邮箱格式不正确')
+            try:
+                validate_email(email)
+                if User.query.filter_by(email=email).first():
+                    field_errors['contact'].append('该邮箱已注册')
+            except EmailNotValidError:
+                field_errors['contact'].append('邮箱格式不正确')
         
         # 4. 验证验证码
         if not verification_code:
-            errors.append('请输入验证码')
+            field_errors['verification_code'].append('请输入验证码')
         elif not VerificationCode.verify_code(contact, verification_code, 'register'):
-            errors.append('验证码错误或已过期')
+            field_errors['verification_code'].append('验证码错误或已过期')
         
-        if errors:
-            for error in errors:
-                flash(error, 'error')
+        # 检查是否有错误
+        has_errors = any(errors for errors in field_errors.values())
+        if has_errors:
             return render_template('register.html', 
                                    username=username, 
                                    phone=phone, 
                                    email=email,
-                                   contact_type=contact_type)
+                                   password=password,
+                                   confirm_password=confirm_password,
+                                   verification_code=verification_code,
+                                   contact_type=contact_type,
+                                   field_errors=field_errors)
         
         # 创建用户
         user = User(
@@ -121,52 +132,36 @@ def send_verification_code():
     code_type = request.form.get('code_type', 'register')
     
     if not contact:
-        return jsonify({'success': False, 'message': '请填写手机号或邮箱'})
+        return jsonify({'success': False, 'message': '请填写邮箱'})
     
-    # 验证联系方式格式
-    is_phone = validate_phone(contact)
-    is_email = False
-    if not is_phone:
-        try:
-            validate_email(contact)
-            is_email = True
-        except EmailNotValidError:
-            return jsonify({'success': False, 'message': '手机号或邮箱格式不正确'})
+    # 验证邮箱格式
+    try:
+        validate_email(contact)
+    except EmailNotValidError:
+        return jsonify({'success': False, 'message': '邮箱格式不正确'})
     
     # 检查是否已注册（注册时）
     if code_type == 'register':
-        if is_phone and User.query.filter_by(phone=contact).first():
-            return jsonify({'success': False, 'message': '该手机号已注册'})
-        if is_email and User.query.filter_by(email=contact).first():
+        if User.query.filter_by(email=contact).first():
             return jsonify({'success': False, 'message': '该邮箱已注册'})
     elif code_type in ['login', 'reset_password']:
-        if is_phone and not User.query.filter_by(phone=contact).first():
-            return jsonify({'success': False, 'message': '该手机号未注册'})
-        if is_email and not User.query.filter_by(email=contact).first():
+        if not User.query.filter_by(email=contact).first():
             return jsonify({'success': False, 'message': '该邮箱未注册'})
     
     # 生成验证码
     code = VerificationCode.generate_code(contact, code_type)
     
-    # 发送验证码
-    if is_email:
-        success, message = send_email(contact, code)
-        if success:
-            return jsonify({
-                'success': True, 
-                'message': f'验证码已发送到 {contact}'
-            })
-        else:
-            return jsonify({
-                'success': False, 
-                'message': f'发送失败：{message}'
-            })
-    else:
-        # 手机号验证码暂时使用演示模式
-        print(f"验证码已发送到 {contact}: {code}")
+    # 发送邮箱验证码
+    success, message = send_email(contact, code)
+    if success:
         return jsonify({
             'success': True, 
-            'message': f'验证码已发送到 {contact}（演示：{code}）'
+            'message': f'验证码已发送到 {contact}'
+        })
+    else:
+        return jsonify({
+            'success': False, 
+            'message': f'发送失败：{message}'
         })
 
 # ==================== 路由：F002 用户登录 ====================
@@ -179,36 +174,40 @@ def login():
         password = request.form.get('password', '').strip()
         captcha = request.form.get('captcha', '').strip()
         
-        errors = []
+        # 错误信息字典，按字段分类
+        field_errors = {
+            'username': [],
+            'password': [],
+            'captcha': []
+        }
         
-        if not username or not password:
-            errors.append('请输入用户名和密码')
+        if not username:
+            field_errors['username'].append('请输入用户名')
+        
+        if not password:
+            field_errors['password'].append('请输入密码')
         
         if not captcha:
-            errors.append('请输入验证码')
+            field_errors['captcha'].append('请输入验证码')
         elif not verify_captcha(captcha):
-            errors.append('验证码错误')
+            field_errors['captcha'].append('验证码错误')
         
-        if errors:
-            for error in errors:
-                flash(error, 'error')
-            return render_template('login.html', username=username)
+        # 检查是否有错误
+        has_errors = any(errors for errors in field_errors.values())
+        if has_errors:
+            return render_template('login.html', 
+                                   username=username,
+                                   field_errors=field_errors)
         
         # 查找用户
         user = User.query.filter_by(username=username, is_admin=False).first()
         
-        if not user:
-            flash('用户名或密码错误', 'error')
-            return render_template('login.html', username=username)
-        
         # 检查是否锁定
-        if user.is_locked():
+        if user and user.is_locked():
             remaining_minutes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60)
-            flash(f'账号已锁定，请 {remaining_minutes} 分钟后再试', 'error')
-            return render_template('login.html', username=username)
-        
+            field_errors['username'].append(f'账号已锁定，请 {remaining_minutes} 分钟后再试')
         # 验证密码
-        if user.check_password(password):
+        elif user and user.check_password(password):
             # 登录成功，重置失败次数
             user.reset_login_attempts()
             session['user_id'] = user.id
@@ -216,14 +215,21 @@ def login():
             flash('登录成功！', 'success')
             return redirect(url_for('auth.dashboard'))
         else:
-            # 密码错误
-            user.increment_login_attempts(5, 10)
-            remaining_attempts = 5 - user.login_attempts
-            if remaining_attempts > 0:
-                flash(f'密码错误，还有 {remaining_attempts} 次尝试机会', 'error')
-            else:
-                flash('密码错误次数过多，账号已被锁定10分钟', 'error')
-            return render_template('login.html', username=username)
+            # 用户名或密码错误
+            field_errors['password'].append('用户名或密码错误')
+            # 增加登录失败次数
+            if user:
+                user.increment_login_attempts(5, 10)
+                remaining_attempts = 5 - user.login_attempts
+                if remaining_attempts <= 0:
+                    field_errors['password'].append('密码错误次数过多，账号已被锁定10分钟')
+        
+        # 检查是否有错误
+        has_errors = any(errors for errors in field_errors.values())
+        if has_errors:
+            return render_template('login.html', 
+                                   username=username,
+                                   field_errors=field_errors)
     
     return render_template('login.html')
 
@@ -236,31 +242,27 @@ def admin_login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         
-        errors = []
+        # 错误信息字典，按字段分类
+        field_errors = {
+            'username': [],
+            'password': []
+        }
         
-        if not username or not password:
-            errors.append('请输入用户名和密码')
+        if not username:
+            field_errors['username'].append('请输入管理员账号')
         
-        if errors:
-            for error in errors:
-                flash(error, 'error')
-            return render_template('admin_login.html', username=username)
+        if not password:
+            field_errors['password'].append('请输入密码')
         
         # 查找管理员
         admin = User.query.filter_by(username=username, is_admin=True).first()
         
-        if not admin:
-            flash('管理员账号不存在', 'error')
-            return render_template('admin_login.html', username=username)
-        
         # 检查是否锁定
-        if admin.is_locked():
+        if admin and admin.is_locked():
             remaining_minutes = int((admin.locked_until - datetime.utcnow()).total_seconds() / 60)
-            flash(f'账号已锁定，请 {remaining_minutes} 分钟后再试', 'error')
-            return render_template('admin_login.html', username=username)
-        
+            field_errors['username'].append(f'账号已锁定，请 {remaining_minutes} 分钟后再试')
         # 验证密码
-        if admin.check_password(password):
+        elif admin and admin.check_password(password):
             # 登录成功，重置失败次数
             admin.reset_login_attempts()
             session['user_id'] = admin.id
@@ -268,15 +270,23 @@ def admin_login():
             session['is_admin'] = True
             flash('管理员登录成功！', 'success')
             return redirect(url_for('auth.admin_dashboard'))
-        else:
+        elif admin:
             # 密码错误
+            field_errors['password'].append('密码错误')
             admin.increment_login_attempts(5, 10)
             remaining_attempts = 5 - admin.login_attempts
-            if remaining_attempts > 0:
-                flash(f'密码错误，还有 {remaining_attempts} 次尝试机会', 'error')
-            else:
-                flash('密码错误次数过多，账号已被锁定10分钟', 'error')
-            return render_template('admin_login.html', username=username)
+            if remaining_attempts <= 0:
+                field_errors['password'].append('密码错误次数过多，账号已被锁定10分钟')
+        elif username:
+            # 管理员账号不存在
+            field_errors['username'].append('管理员账号不存在')
+        
+        # 检查是否有错误
+        has_errors = any(errors for errors in field_errors.values())
+        if has_errors:
+            return render_template('admin_login.html', 
+                                   username=username,
+                                   field_errors=field_errors)
     
     return render_template('admin_login.html')
 
@@ -291,58 +301,60 @@ def forgot_password():
         new_password = request.form.get('new_password', '').strip()
         confirm_password = request.form.get('confirm_password', '').strip()
         
-        errors = []
+        # 错误信息字典，按字段分类
+        field_errors = {
+            'contact': [],
+            'verification_code': [],
+            'new_password': [],
+            'confirm_password': []
+        }
         
-        # 验证联系方式
-        is_phone = validate_phone(contact)
-        is_email = False
-        if not is_phone:
+        # 验证邮箱
+        if not contact:
+            field_errors['contact'].append('请输入邮箱')
+        else:
             try:
                 validate_email(contact)
-                is_email = True
-            except EmailNotValidError:
-                errors.append('手机号或邮箱格式不正确')
-        
-        # 查找用户
-        user = None
-        if not errors:
-            if is_phone:
-                user = User.query.filter_by(phone=contact, is_admin=False).first()
-            elif is_email:
+                # 查找用户
                 user = User.query.filter_by(email=contact, is_admin=False).first()
-            
-            if not user:
-                errors.append('该账号未注册或为管理员账号（管理员无法自主找回密码）')
+                if not user:
+                    field_errors['contact'].append('该账号未注册或为管理员账号（管理员无法自主找回密码）')
+            except EmailNotValidError:
+                field_errors['contact'].append('邮箱格式不正确')
         
         # 验证验证码
         if not verification_code:
-            errors.append('请输入验证码')
+            field_errors['verification_code'].append('请输入验证码')
         elif not VerificationCode.verify_code(contact, verification_code, 'reset_password'):
-            errors.append('验证码错误或已过期')
+            field_errors['verification_code'].append('验证码错误或已过期')
         
         # 验证新密码
         if not new_password:
-            errors.append('请输入新密码')
+            field_errors['new_password'].append('请输入新密码')
         else:
             is_valid, msg = User.validate_password_strength(new_password)
             if not is_valid:
-                errors.append(msg)
+                field_errors['new_password'].append(msg)
         
         if new_password != confirm_password:
-            errors.append('两次密码输入不一致')
+            field_errors['confirm_password'].append('两次密码输入不一致')
         
-        if errors:
-            for error in errors:
-                flash(error, 'error')
-            return render_template('forgot_password.html', contact=contact)
+        # 检查是否有错误
+        has_errors = any(errors for errors in field_errors.values())
+        if has_errors:
+            return render_template('forgot_password.html', 
+                                   contact=contact,
+                                   field_errors=field_errors)
         
         # 重置密码
         user.set_password(new_password)
         user.reset_login_attempts()  # 重置失败次数
         db.session.commit()
         
-        flash('密码重置成功！请使用新密码登录', 'success')
-        return redirect(url_for('auth.login'))
+        # 密码重置成功，显示成功消息
+        return render_template('forgot_password.html', 
+                               contact=contact,
+                               success_message='密码重置成功！请使用新密码登录')
     
     return render_template('forgot_password.html')
 
@@ -367,7 +379,7 @@ def admin_dashboard():
     users = User.query.filter_by(is_admin=False).all()
     return render_template('admin_dashboard.html', admin=admin, users=users)
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     """登出"""
     session.clear()

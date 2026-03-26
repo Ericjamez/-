@@ -9,6 +9,7 @@
     <p class="subtitle">创建账号，开启垃圾分类之旅 🚀</p>
     
     <form method="POST" action="{{ url_for('auth.register') }}">
+        <input type="hidden" id="contact_type" name="contact_type" value="{{ contact_type|default('email') }}">
         <div class="form-group">
             <label>用户名</label>
             <div class="input-wrapper">
@@ -17,36 +18,16 @@
                        placeholder="请输入用户名（3-20个字符）" required>
                 <span class="input-icon">👤</span>
             </div>
+            {% if field_errors and field_errors.username %}
+                <div class="error-message">
+                    {% for error in field_errors.username %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label>联系方式</label>
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('phone')">
-                    <span>📱 手机号</span>
-                </div>
-                <div class="tab" onclick="switchTab('email')">
-                    <span>📧 邮箱</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group" id="phone-group">
-            <label>手机号</label>
-            <div class="input-wrapper">
-                <input type="tel" id="phone" name="phone" 
-                       value="{{ phone|default('') }}" 
-                       placeholder="请输入手机号">
-                <span class="input-icon">📱</span>
-            </div>
-            <div style="margin-top: 12px;">
-                <button type="button" class="btn-small" onclick="sendCode('phone')">
-                    <span>📲 发送验证码</span>
-                </button>
-            </div>
-        </div>
-        
-        <div class="form-group" id="email-group" style="display: none;">
             <label>邮箱</label>
             <div class="input-wrapper">
                 <input type="email" id="email" name="email" 
@@ -59,33 +40,64 @@
                     <span>📧 发送验证码</span>
                 </button>
             </div>
+            {% if field_errors and field_errors.contact %}
+                <div class="error-message">
+                    {% for error in field_errors.contact %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <div class="form-group">
             <label>验证码</label>
             <div class="input-wrapper">
                 <input type="text" id="verification_code" name="verification_code" 
+                       value="{{ verification_code|default('') }}" 
                        placeholder="请输入验证码" required>
                 <span class="input-icon">🔢</span>
             </div>
+            {% if field_errors and field_errors.verification_code %}
+                <div class="error-message">
+                    {% for error in field_errors.verification_code %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <div class="form-group">
             <label>密码</label>
             <div class="input-wrapper">
                 <input type="password" id="password" name="password" 
+                       value="{{ password|default('') }}" 
                        placeholder="至少8位，包含字母和数字" required>
                 <span class="input-icon">🔒</span>
             </div>
+            {% if field_errors and field_errors.password %}
+                <div class="error-message">
+                    {% for error in field_errors.password %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <div class="form-group">
             <label>确认密码</label>
             <div class="input-wrapper">
                 <input type="password" id="confirm_password" name="confirm_password" 
+                       value="{{ confirm_password|default('') }}" 
                        placeholder="请再次输入密码" required>
                 <span class="input-icon">🔐</span>
             </div>
+            {% if field_errors and field_errors.confirm_password %}
+                <div class="error-message">
+                    {% for error in field_errors.confirm_password %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <button type="submit">
@@ -101,33 +113,11 @@
 </div>
 
 <script>
-let currentContactType = 'phone';
-
-function switchTab(type) {
-    currentContactType = type;
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    
-    if (type === 'phone') {
-        tabs[0].classList.add('active');
-        document.getElementById('phone-group').style.display = 'block';
-        document.getElementById('email-group').style.display = 'none';
-        document.getElementById('phone').required = true;
-        document.getElementById('email').required = false;
-    } else {
-        tabs[1].classList.add('active');
-        document.getElementById('phone-group').style.display = 'none';
-        document.getElementById('email-group').style.display = 'block';
-        document.getElementById('phone').required = false;
-        document.getElementById('email').required = true;
-    }
-}
-
 async function sendCode(type) {
     const contact = document.getElementById(type).value;
     
     if (!contact) {
-        alert('⚠️ 请先输入' + (type === 'phone' ? '手机号' : '邮箱'));
+        alert('⚠️ 请先输入邮箱');
         return;
     }
     
@@ -155,21 +145,8 @@ async function sendCode(type) {
         alert('❌ 发送失败，请稍后重试');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>' + (type === 'phone' ? '📲' : '📧') + ' 发送验证码</span>';
+        btn.innerHTML = '<span>📧 发送验证码</span>';
     }
 }
-
-// 页面加载时设置正确的标签
-document.addEventListener('DOMContentLoaded', function() {
-    const phoneValue = document.getElementById('phone').value;
-    const emailValue = document.getElementById('email').value;
-    const contactType = '{{ contact_type|default("phone") }}';
-    
-    if (contactType === 'email' || (!phoneValue && emailValue)) {
-        switchTab('email');
-    } else {
-        switchTab('phone');
-    }
-});
 </script>
 {% endblock %}

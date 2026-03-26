@@ -454,6 +454,28 @@
             margin-top: 6px;
         }
         
+        .error-message small {
+            color: #f44336;
+            font-size: 12px;
+            display: block;
+            margin-top: 6px;
+        }
+        
+        .success-message {
+            background-color: #dcfce7;
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            display: flex;
+            align-items: center;
+            color: #166534;
+        }
+        .success-message span {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
         /* 响应式设计 */
         @media (max-width: 640px) {
             .container {
@@ -495,15 +517,25 @@
     
     <script>
         // 图形验证码功能
-        function generateCaptcha() {
+        async function generateCaptcha() {
             const captcha = document.getElementById('captcha-display');
             if (captcha) {
-                const code = Math.floor(1000 + Math.random() * 9000);
-                captcha.textContent = code;
-                // 添加动画效果
-                captcha.style.animation = 'none';
-                captcha.offsetHeight; // 触发重绘
-                captcha.style.animation = 'bounce 0.5s';
+                try {
+                    const response = await fetch('/generate-captcha');
+                    const data = await response.json();
+                    if (data.success) {
+                        captcha.textContent = data.captcha;
+                        // 添加动画效果
+                        captcha.style.animation = 'none';
+                        captcha.offsetHeight; // 触发重绘
+                        captcha.style.animation = 'bounce 0.5s';
+                    }
+                } catch (error) {
+                    console.error('生成验证码失败:', error);
+                    // 生成本地验证码作为备用
+                    const code = Math.floor(1000 + Math.random() * 9000);
+                    captcha.textContent = code;
+                }
             }
         }
         
