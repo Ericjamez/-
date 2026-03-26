@@ -213,7 +213,7 @@ def login():
             session['user_id'] = user.id
             session['username'] = user.username
             flash('登录成功！', 'success')
-            return redirect(url_for('auth.dashboard'))
+            return redirect(url_for('auth.index'))
         else:
             # 用户名或密码错误
             field_errors['password'].append('用户名或密码错误')
@@ -358,16 +358,56 @@ def forgot_password():
     
     return render_template('forgot_password.html')
 
-# ==================== 仪表盘和登出 ====================
+# ==================== 首页和仪表盘 ====================
+
+@auth_bp.route('/')
+def index():
+    """首页"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('index.html')
 
 @auth_bp.route('/dashboard')
 def dashboard():
     """用户仪表盘"""
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
-    user = User.query.get(session['user_id'])
-    return render_template('dashboard.html', user=user)
+    return render_template('dashboard.html')
+
+@auth_bp.route('/recognition')
+def recognition():
+    """AI识别交互中心"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('recognition.html')
+
+@auth_bp.route('/knowledge')
+def knowledge():
+    """垃圾分类知识图谱"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('knowledge.html')
+
+@auth_bp.route('/analytics')
+def analytics():
+    """模型性能与统计"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('analytics.html')
+
+@auth_bp.route('/feedback')
+def feedback():
+    """反馈与主动学习工作台"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('feedback.html')
+
+@auth_bp.route('/deployment')
+def deployment():
+    """MindSpace部署实验化实验室"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('deployment.html')
 
 @auth_bp.route('/admin/dashboard')
 def admin_dashboard():
@@ -379,6 +419,84 @@ def admin_dashboard():
     users = User.query.filter_by(is_admin=False).all()
     return render_template('admin_dashboard.html', admin=admin, users=users)
 
+@auth_bp.route('/recognize', methods=['POST'])
+def recognize():
+    """识别垃圾图片"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'message': '请上传图片'})
+    
+    image = request.files['image']
+    if image.filename == '':
+        return jsonify({'success': False, 'message': '请选择图片'})
+    
+    # 保存图片到临时文件
+    import os
+    import tempfile
+    
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+        image.save(temp_file)
+        temp_file_path = temp_file.name
+    
+    try:
+        # 调用识别函数
+        from app.utils import recognize_image
+        success, result, confidence = recognize_image(temp_file_path)
+        
+        if success:
+            # 生成知识内容
+            knowledge = generate_knowledge(result)
+            return jsonify({
+                'success': True,
+                'result': {
+                    'category': result,
+                    'confidence': confidence,
+                    'time': round(0.1, 2)  # 模拟识别时间
+                },
+                'knowledge': knowledge
+            })
+        else:
+            return jsonify({'success': False, 'message': result})
+    finally:
+        # 删除临时文件
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+
+def generate_knowledge(category):
+    """根据分类生成知识内容"""
+    knowledge_map = {
+        '可回收物': '可回收物是指适宜回收利用和资源化利用的生活废弃物，如纸类、塑料、玻璃、金属和布料等。这些废弃物可以通过回收再利用，减少对环境的污染，节约资源。',
+        '厨余垃圾': '厨余垃圾是指居民日常生活及食品加工、饮食服务、单位供餐等活动中产生的垃圾，包括丢弃不用的菜叶、剩菜、剩饭、果皮、蛋壳、茶渣、骨头等。这些垃圾可以通过堆肥等方式进行资源化利用。',
+        '有害垃圾': '有害垃圾是指对人体健康或者自然环境造成直接或者潜在危害的生活废弃物，如废电池、废荧光灯管、废药品、废油漆及其容器等。这些垃圾需要特殊安全处理，避免对环境和人体健康造成危害。',
+        '其他垃圾': '其他垃圾是指除可回收物、厨余垃圾、有害垃圾之外的其他生活废弃物，如砖瓦陶瓷、渣土、卫生间废纸、纸巾等难以回收的废弃物。这些垃圾通常采用焚烧或填埋的方式处理。'
+    }
+    return knowledge_map.get(category, '暂无相关知识')
+
+@auth_bp.route('/feedback', methods=['POST'])
+def feedback():
+    """提交反馈"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    real_category = request.form.get('real_category', '').strip()
+    note = request.form.get('note', '').strip()
+    
+    if not real_category:
+        return jsonify({'success': False, 'message': '请选择真实的垃圾分类'})
+    
+    # 处理图片（如果有）
+    if 'image' in request.files:
+        image = request.files['image']
+        if image.filename != '':
+            # 这里可以添加保存图片的逻辑
+            pass
+    
+    # 这里可以添加反馈数据的处理逻辑，例如保存到数据库
+    
+    return jsonify({'success': True, 'message': '反馈提交成功，感谢您的帮助！'})
+
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     """登出"""
@@ -386,9 +504,4 @@ def logout():
     flash('已成功登出', 'success')
     return redirect(url_for('auth.login'))
 
-# ==================== 首页 ====================
 
-@auth_bp.route('/')
-def index():
-    """首页 - 直接跳转到登录页"""
-    return redirect(url_for('auth.login'))

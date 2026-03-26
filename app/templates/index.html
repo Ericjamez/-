@@ -1,63 +1,801 @@
-{% extends "base.html" %}
-
-{% block title %}首页 - 垃圾图片分类系统{% endblock %}
-
-{% block content %}
-<div class="container wide">
-    <div class="logo-emoji">🗑️</div>
-    <h1>垃圾图片分类系统</h1>
-    <p class="subtitle">让垃圾分类变得简单有趣！</p>
-    
-    <div style="text-align: center; padding: 30px 0;">
-        <p style="color: #666; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
-            🎯 智能识别 · 📱 随时随地 · ♻️ 保护环境
-        </p>
-    </div>
-    
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-        <a href="{{ url_for('auth.login') }}" style="text-decoration: none;">
-            <button>
-                <span>👋 用户登录</span>
-            </button>
-        </a>
-        
-        <a href="{{ url_for('auth.register') }}" style="text-decoration: none;">
-            <button style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
-                <span>✨ 用户注册</span>
-            </button>
-        </a>
-        
-        <a href="{{ url_for('auth.admin_login') }}" style="text-decoration: none;">
-            <button class="btn-secondary">
-                <span>🛡️ 管理员登录</span>
-            </button>
-        </a>
-    </div>
-    
-    <div style="margin-top: 40px; padding: 25px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; border: 2px solid #e8e8e8;">
-        <h2 style="font-size: 18px; margin-bottom: 15px; justify-content: center;">
-            <span>🌟</span> 系统功能
-        </h2>
-        <ul class="feature-list">
-            <li>📸 智能图片识别，一秒分类</li>
-            <li>📚 完整垃圾分类知识库</li>
-            <li>🔒 安全可靠的用户管理</li>
-            <li>📊 详细的数据统计分析</li>
-            <li>🎨 简洁美观的界面设计</li>
-        </ul>
-    </div>
-    
-    <div style="margin-top: 30px; text-align: center;">
-        <p style="color: #999; font-size: 14px;">
-            🌍 共同守护美好家园，从垃圾分类开始
-        </p>
-    </div>
-</div>
-
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 垃圾图片分类系统</title>
+</head>
+<body>
 <style>
-    button span {
+    /* 全局样式重置 */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    /* 页面基础样式 */
+    body {
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: #f8f9fa;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+    
+    /* 导航栏样式 - 现代简约 */
+    .navbar {
+        background: white;
+        padding: 12px 0;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    }
+    
+    .navbar-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+    }
+    
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: #2E7D32;
+        font-weight: 700;
+    }
+    
+    .navbar-brand span {
+        font-size: 24px;
+        transition: transform 0.3s ease;
+    }
+    
+    .navbar-brand:hover span {
+        transform: rotate(5deg) scale(1.1);
+    }
+    
+    .navbar-brand h1 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .navbar-menu {
+        list-style: none;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .navbar-menu li a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 16px;
+        color: #495057;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        font-weight: 500;
+        position: relative;
+    }
+    
+    .navbar-menu li a:hover {
+        background: #f0f7f0;
+        color: #2E7D32;
+        transform: translateY(-1px);
+    }
+    
+    .navbar-menu li .logout-btn {
+        color: #dc3545;
+    }
+    
+    .navbar-menu li .logout-btn:hover {
+        background: #f8d7da;
+    }
+    
+    /* 英雄区域样式 - 简洁现代 */
+    .hero {
+        background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
+        padding: 80px 0;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="1" fill="%2381C784" opacity="0.1"/></svg>') repeat;
+        animation: float 20s linear infinite;
+    }
+    
+    .hero-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 24px;
         position: relative;
         z-index: 1;
     }
+    
+    .hero-content {
+        animation: slideUp 0.8s ease-out;
+    }
+    
+    .hero-title {
+        font-size: 36px;
+        margin-bottom: 20px;
+        color: #2E7D32;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 18px;
+        color: #6c757d;
+        margin-bottom: 40px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+    }
+    
+    .hero-welcome {
+        display: inline-block;
+        background: white;
+        padding: 24px 36px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        animation: slideUp 0.8s ease-out 0.2s both;
+        border: 1px solid #e8f5e8;
+    }
+    
+    .hero-welcome h2 {
+        margin-bottom: 12px;
+        color: #2E7D32;
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .hero-welcome p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 16px;
+    }
+    
+    /* 功能卡片区域 */
+    .features {
+        padding: 80px 0;
+        background: white;
+    }
+    
+    .features-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+    
+    .section-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+    
+    .section-title {
+        font-size: 28px;
+        margin-bottom: 12px;
+        color: #343a40;
+        font-weight: 700;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: #4CAF50;
+        border-radius: 2px;
+    }
+    
+    .section-subtitle {
+        font-size: 16px;
+        color: #6c757d;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 32px;
+    }
+    
+    .feature-card {
+        background: #f8f9fa;
+        padding: 40px 32px;
+        border-radius: 16px;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+        border-color: #4CAF50;
+    }
+    
+    .feature-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        display: inline-block;
+        transition: all 0.3s ease;
+        color: #4CAF50;
+    }
+    
+    .feature-card:hover .feature-icon {
+        transform: scale(1.1);
+    }
+    
+    .feature-card h3 {
+        font-size: 18px;
+        margin-bottom: 16px;
+        color: #343a40;
+        font-weight: 600;
+    }
+    
+    .feature-card p {
+        color: #6c757d;
+        margin-bottom: 24px;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+    
+    .feature-link {
+        display: inline-block;
+        padding: 10px 20px;
+        background: white;
+        border: 1px solid #4CAF50;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #4CAF50;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    
+    .feature-link:hover {
+        background: #4CAF50;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    
+    /* 使用流程区域 */
+    .usage {
+        padding: 80px 0;
+        background: #f8f9fa;
+    }
+    
+    .usage-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+    
+    .usage-steps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 50px;
+    }
+    
+    .usage-step {
+        flex: 1;
+        min-width: 220px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .usage-step:hover {
+        transform: translateY(-4px);
+    }
+    
+    .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 50%;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .usage-step:hover .step-number {
+        transform: scale(1.1);
+        box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+    }
+    
+    .step-title {
+        font-size: 16px;
+        margin-bottom: 12px;
+        color: #343a40;
+        font-weight: 600;
+    }
+    
+    .step-description {
+        color: #6c757d;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+    
+    /* 底部信息样式 */
+    .footer {
+        background: #343a40;
+        color: white;
+        padding: 60px 0 30px;
+    }
+    
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+    
+    .footer-content {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 40px;
+        margin-bottom: 40px;
+    }
+    
+    .footer-column {
+        flex: 1;
+        min-width: 240px;
+    }
+    
+    .footer-column h3 {
+        font-size: 16px;
+        margin-bottom: 20px;
+        color: white;
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 10px;
+    }
+    
+    .footer-column h3::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 40px;
+        height: 2px;
+        background: #4CAF50;
+    }
+    
+    .footer-links {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .footer-links li {
+        margin-bottom: 10px;
+    }
+    
+    .footer-links a {
+        color: #adb5bd;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        font-weight: 400;
+    }
+    
+    .footer-links a:hover {
+        color: #4CAF50;
+        padding-left: 4px;
+    }
+    
+    .footer-copyright {
+        text-align: center;
+        padding-top: 30px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        color: #adb5bd;
+        font-size: 14px;
+    }
+    
+    /* 动画效果 */
+    @keyframes float {
+        0% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-8px);
+        }
+        100% {
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .navbar-container {
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px 20px;
+        }
+        
+        .navbar-menu {
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .navbar-menu li a {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        
+        .hero {
+            padding: 60px 0;
+        }
+        
+        .hero-title {
+            font-size: 28px;
+        }
+        
+        .hero-subtitle {
+            font-size: 16px;
+        }
+        
+        .features {
+            padding: 60px 0;
+        }
+        
+        .section-title {
+            font-size: 24px;
+        }
+        
+        .features-grid {
+            gap: 24px;
+        }
+        
+        .feature-card {
+            padding: 32px 24px;
+        }
+        
+        .usage {
+            padding: 60px 0;
+        }
+        
+        .usage-steps {
+            flex-direction: column;
+            gap: 32px;
+        }
+        
+        .footer-content {
+            flex-direction: column;
+            gap: 32px;
+        }
+    }
+    
+    /* 登录成功提示 */
+    .success-alert {
+        position: fixed;
+        top: 80px;
+        right: 24px;
+        background: #d4edda;
+        color: #155724;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        z-index: 1001;
+        animation: slideInRight 0.3s ease-out;
+        border-left: 4px solid #28a745;
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
 </style>
-{% endblock %}
+
+<!-- 登录成功提示 -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            {% if category == 'success' %}
+                <div class="success-alert">
+                    {{ message }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="{{ url_for('auth.index') }}" class="navbar-brand">
+            <span>🗑️</span>
+            <span>垃圾图片分类系统</span>
+        </a>
+        <ul class="navbar-menu">
+            <li>
+                <a href="{{ url_for('auth.index') }}">
+                    <span>🏠</span> 首页
+                </a>
+            </li>
+            {% if 'user_id' in session %}
+            <li>
+                <a href="{{ url_for('auth.recognition') }}">
+                    <span>🔍</span> AI识别
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.knowledge') }}">
+                    <span>🧠</span> 知识图谱
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.analytics') }}">
+                    <span>📊</span> 性能统计
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.feedback') }}">
+                    <span>📝</span> 反馈学习
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.deployment') }}">
+                    <span>🚀</span> 部署实验室
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+                    <span>🚪</span> 退出
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <a href="{{ url_for('auth.login') }}">
+                    <span>👋</span> 登录
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.register') }}">
+                    <span>✨</span> 注册
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.admin_login') }}">
+                    <span>🛡️</span> 管理员
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<!-- 英雄区域 -->
+<div class="hero">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">智能垃圾分类解决方案</h1>
+            <p class="hero-subtitle">
+                通过AI技术，让垃圾分类变得简单高效。上传图片，一键识别，轻松掌握分类知识，共同守护美好环境。
+            </p>
+            
+            {% if 'user_id' in session %}
+            <div class="hero-welcome">
+                <h2>欢迎回来，{{ session['username'] }}！</h2>
+                <p>开始使用智能垃圾分类系统，为环保贡献一份力量</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 功能特点 -->
+<div class="features">
+    <div class="features-container">
+        <div class="section-header">
+            <h2 class="section-title">核心功能</h2>
+            <p class="section-subtitle">
+                我们提供全方位的垃圾分类解决方案，从智能识别到知识学习，满足您的各种需求
+            </p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>AI智能识别</h3>
+                <p>上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达95%以上。</p>
+                {% if 'user_id' in session %}
+                <a href="{{ url_for('auth.recognition') }}" class="feature-link">立即体验</a>
+                {% endif %}
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>知识图谱</h3>
+                <p>构建垃圾分类知识图谱，提供详细的分类标准和处理方法。支持按类别、地区等维度查询，助力垃圾分类知识普及。</p>
+                {% if 'user_id' in session %}
+                <a href="{{ url_for('auth.knowledge') }}" class="feature-link">探索知识</a>
+                {% endif %}
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>性能统计</h3>
+                <p>实时统计识别数据，分析模型性能。提供识别量趋势、分类分布、高频误分类等多维度数据分析，持续优化模型。</p>
+                {% if 'user_id' in session %}
+                <a href="{{ url_for('auth.analytics') }}" class="feature-link">查看统计</a>
+                {% endif %}
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>反馈学习</h3>
+                <p>用户可对识别结果进行反馈，系统通过主动学习不断优化模型。管理员可查看反馈记录，进行人工审核和模型更新。</p>
+                {% if 'user_id' in session %}
+                <a href="{{ url_for('auth.feedback') }}" class="feature-link">参与反馈</a>
+                {% endif %}
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>部署实验室</h3>
+                <p>提供模型部署和性能测试环境。支持不同模型版本的对比测试，优化部署参数，确保系统在各种环境下的稳定运行。</p>
+                {% if 'user_id' in session %}
+                <a href="{{ url_for('auth.deployment') }}" class="feature-link">进入实验室</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 如何使用 -->
+<div class="usage">
+    <div class="usage-container">
+        <div class="section-header">
+            <h2 class="section-title">使用流程</h2>
+            <p class="section-subtitle">
+                简单四步，轻松掌握垃圾分类
+            </p>
+        </div>
+        
+        <div class="usage-steps">
+            <div class="usage-step">
+                <div class="step-number">1</div>
+                <h3 class="step-title">登录系统</h3>
+                <p class="step-description">使用您的账号登录系统，或注册新账号。</p>
+            </div>
+            
+            <div class="usage-step">
+                <div class="step-number">2</div>
+                <h3 class="step-title">上传图片</h3>
+                <p class="step-description">在AI识别页面上传垃圾图片，或直接拍照。</p>
+            </div>
+            
+            <div class="usage-step">
+                <div class="step-number">3</div>
+                <h3 class="step-title">查看结果</h3>
+                <p class="step-description">系统自动识别垃圾类型，并提供详细的分类信息。</p>
+            </div>
+            
+            <div class="usage-step">
+                <div class="step-number">4</div>
+                <h3 class="step-title">学习知识</h3>
+                <p class="step-description">通过知识图谱了解更多垃圾分类知识，提升环保意识。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 底部信息 -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>关于我们</h3>
+                <ul class="footer-links">
+                    <li><a href="#">团队介绍</a></li>
+                    <li><a href="#">项目愿景</a></li>
+                    <li><a href="#">联系方式</a></li>
+                    <li><a href="#">加入我们</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>快速链接</h3>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('auth.index') }}">首页</a></li>
+                    {% if 'user_id' in session %}
+                    <li><a href="{{ url_for('auth.recognition') }}">AI识别</a></li>
+                    <li><a href="{{ url_for('auth.knowledge') }}">知识图谱</a></li>
+                    <li><a href="{{ url_for('auth.analytics') }}">性能统计</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">登录</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">注册</a></li>
+                    <li><a href="{{ url_for('auth.admin_login') }}">管理员登录</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <div class="footer-column">
+                <h3>资源中心</h3>
+                <ul class="footer-links">
+                    <li><a href="#">帮助文档</a></li>
+                    <li><a href="#">API文档</a></li>
+                    <li><a href="#">常见问题</a></li>
+                    <li><a href="#">垃圾分类指南</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-copyright">
+            © 2026 垃圾图片分类系统 | 共同守护美好家园，从垃圾分类开始
+        </div>
+    </div>
+</footer>
+
+<script>
+    // 登录成功提示自动消失
+    setTimeout(function() {
+        const alert = document.querySelector('.success-alert');
+        if (alert) {
+            alert.style.animation = 'slideInRight 0.3s ease-out reverse';
+            setTimeout(() => {
+                alert.remove();
+            }, 300);
+        }
+    }, 3000);
+</script>
+</body>
+</html>
