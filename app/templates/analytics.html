@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型性能与统计 - 垃圾图片分类系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-y: auto;
+            background-attachment: fixed;
+        }
+        
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -20px) rotate(5deg); }
+            50% { transform: translate(-10px, 20px) rotate(-5deg); }
+            75% { transform: translate(15px, 10px) rotate(3deg); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .container.wide {
+            max-width: 1000px;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo-emoji {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        select, input, textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #fafafa;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: white;
+        }
+        
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #333;
+            border: 2px solid #e8e8e8;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-small {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            margin-bottom: 20px;
+        }
+        
+        .info-box.info {
+            border-color: #64b5f6;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+        
+        .info-box.success {
+            border-color: #81c784;
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        }
+        
+        .info-box.error {
+            border-color: #ef9a9a;
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: 600;
+            color: #333;
+        }
+        
+        tr:hover td {
+            background: #f8f9fa;
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 20px;
+            background: white;
+            margin-bottom: 20px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container wide">
+    <div class="logo-emoji">📊</div>
+    <h1>模型性能与统计</h1>
+    <p class="subtitle">分析垃圾识别数据，优化模型性能</p>
+    
+    <div class="form-group">
+        <label>时间范围</label>
+        <div class="input-group">
+            <input type="date" id="start-date" style="flex: 1;">
+            <input type="date" id="end-date" style="flex: 1;">
+            <button type="button" onclick="refreshData()" class="btn-small">
+                <span>🔄 刷新数据</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 数据概览 -->
+    <div class="form-group">
+        <label>数据概览</label>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="info-box" style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border: 2px solid #64b5f6; color: #1565c0;">
+                <h3 style="margin-bottom: 10px;">📸 识别总量</h3>
+                <p style="font-size: 24px; font-weight: bold;">1,245</p>
+                <p style="font-size: 12px; opacity: 0.8;">今日识别: 45</p>
+            </div>
+            <div class="info-box" style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); border: 2px solid #81c784; color: #2e7d32;">
+                <h3 style="margin-bottom: 10px;">🎯 平均准确率</h3>
+                <p style="font-size: 24px; font-weight: bold;">92.5%</p>
+                <p style="font-size: 12px; opacity: 0.8;">较昨日: +0.3%</p>
+            </div>
+            <div class="info-box" style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%); border: 2px solid #ffb74d; color: #ef6c00;">
+                <h3 style="margin-bottom: 10px;">⏱️ 平均响应时间</h3>
+                <p style="font-size: 24px; font-weight: bold;">0.6s</p>
+                <p style="font-size: 12px; opacity: 0.8;">较昨日: -0.1s</p>
+            </div>
+            <div class="info-box" style="flex: 1; min-width: 200px; background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border: 2px solid #ba68c8; color: #4a148c;">
+                <h3 style="margin-bottom: 10px;">📈 模型版本</h3>
+                <p style="font-size: 24px; font-weight: bold;">v1.2</p>
+                <p style="font-size: 12px; opacity: 0.8;">上次更新: 2024-01-15</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 识别量趋势 -->
+    <div class="form-group">
+        <label>识别量趋势</label>
+        <div style="border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+            <canvas id="recognition-trend" width="100%" height="300"></canvas>
+        </div>
+    </div>
+    
+    <!-- 分类分布 -->
+    <div class="form-group">
+        <label>垃圾分类分布</label>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px; border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+                <canvas id="category-distribution" width="100%" height="300"></canvas>
+            </div>
+            <div style="flex: 1; min-width: 300px; border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+                <h3 style="margin-bottom: 20px;">分类占比</h3>
+                <table>
+                    <tr>
+                        <th>分类</th>
+                        <th>数量</th>
+                        <th>占比</th>
+                    </tr>
+                    <tr>
+                        <td>可回收物</td>
+                        <td>456</td>
+                        <td>36.6%</td>
+                    </tr>
+                    <tr>
+                        <td>厨余垃圾</td>
+                        <td>324</td>
+                        <td>26.0%</td>
+                    </tr>
+                    <tr>
+                        <td>有害垃圾</td>
+                        <td>123</td>
+                        <td>9.9%</td>
+                    </tr>
+                    <tr>
+                        <td>其他垃圾</td>
+                        <td>342</td>
+                        <td>27.5%</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 高频误分类 -->
+    <div class="form-group">
+        <label>高频误分类</label>
+        <div style="border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+            <table>
+                <tr>
+                    <th>垃圾名称</th>
+                    <th>正确分类</th>
+                    <th>错误分类</th>
+                    <th>误分次数</th>
+                    <th>准确率</th>
+                </tr>
+                <tr>
+                    <td>外卖盒</td>
+                    <td>其他垃圾</td>
+                    <td>可回收物</td>
+                    <td>12</td>
+                    <td>75%</td>
+                </tr>
+                <tr>
+                    <td>咖啡杯</td>
+                    <td>其他垃圾</td>
+                    <td>可回收物</td>
+                    <td>8</td>
+                    <td>80%</td>
+                </tr>
+                <tr>
+                    <td>电池</td>
+                    <td>有害垃圾</td>
+                    <td>其他垃圾</td>
+                    <td>6</td>
+                    <td>85%</td>
+                </tr>
+                <tr>
+                    <td>骨头</td>
+                    <td>厨余垃圾</td>
+                    <td>其他垃圾</td>
+                    <td>5</td>
+                    <td>88%</td>
+                </tr>
+                <tr>
+                    <td>塑料瓶</td>
+                    <td>可回收物</td>
+                    <td>其他垃圾</td>
+                    <td>4</td>
+                    <td>90%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 数据导出 -->
+    <div class="form-group">
+        <label>数据导出</label>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="exportData('excel')" style="flex: 1;">
+                <span>📊 导出Excel</span>
+            </button>
+            <button type="button" onclick="exportData('csv')" style="flex: 1; background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+                <span>📄 导出CSV</span>
+            </button>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('auth.dashboard') }}" class="btn-link">
+            ← 返回仪表盘
+        </a>
+    </div>
+</div>
+
+<script>
+// 模拟数据
+const recognitionData = {
+    dates: ['1/1', '1/2', '1/3', '1/4', '1/5', '1/6', '1/7', '1/8', '1/9', '1/10', '1/11', '1/12', '1/13', '1/14', '1/15'],
+    counts: [32, 45, 38, 52, 48, 60, 55, 65, 70, 62, 75, 80, 78, 85, 90]
+};
+
+const categoryData = {
+    labels: ['可回收物', '厨余垃圾', '有害垃圾', '其他垃圾'],
+    data: [456, 324, 123, 342]
+};
+
+// 绘制识别量趋势图
+function drawRecognitionTrend() {
+    const canvas = document.getElementById('recognition-trend');
+    const ctx = canvas.getContext('2d');
+    
+    // 清除画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 绘制网格
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const y = (canvas.height / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+    
+    // 绘制数据线
+    ctx.strokeStyle = '#4CAF50';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    
+    const stepX = (canvas.width - 40) / (recognitionData.dates.length - 1);
+    const maxCount = Math.max(...recognitionData.counts);
+    
+    recognitionData.counts.forEach((count, index) => {
+        const x = 20 + (stepX * index);
+        const y = canvas.height - 20 - (count / maxCount) * (canvas.height - 40);
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
+    
+    // 绘制数据点
+    ctx.fillStyle = '#4CAF50';
+    recognitionData.counts.forEach((count, index) => {
+        const x = 20 + (stepX * index);
+        const y = canvas.height - 20 - (count / maxCount) * (canvas.height - 40);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    
+    // 绘制日期标签
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    recognitionData.dates.forEach((date, index) => {
+        const x = 20 + (stepX * index);
+        ctx.fillText(date, x, canvas.height - 5);
+    });
+}
+
+// 绘制分类分布图
+function drawCategoryDistribution() {
+    const canvas = document.getElementById('category-distribution');
+    const ctx = canvas.getContext('2d');
+    
+    // 清除画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+    
+    const total = categoryData.data.reduce((sum, value) => sum + value, 0);
+    let currentAngle = -Math.PI / 2;
+    
+    const colors = ['#4CAF50', '#FF9800', '#F44336', '#9E9E9E'];
+    
+    categoryData.data.forEach((value, index) => {
+        const sliceAngle = (value / total) * 2 * Math.PI;
+        
+        // 绘制扇形
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[index];
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // 绘制标签
+        const labelAngle = currentAngle + sliceAngle / 2;
+        const labelX = centerX + Math.cos(labelAngle) * (radius + 30);
+        const labelY = centerY + Math.sin(labelAngle) * (radius + 30);
+        
+        ctx.fillStyle = colors[index];
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(categoryData.labels[index], labelX, labelY);
+        
+        currentAngle += sliceAngle;
+    });
+}
+
+function refreshData() {
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    if (startDate && endDate && startDate > endDate) {
+        alert('开始日期不能晚于结束日期');
+        return;
+    }
+    
+    // 模拟数据刷新
+    alert('数据已刷新');
+    // 实际项目中这里会发送请求获取新数据
+}
+
+function exportData(format) {
+    // 模拟数据导出
+    alert(`数据已导出为${format.toUpperCase()}格式`);
+    // 实际项目中这里会生成并下载文件
+}
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    drawRecognitionTrend();
+    drawCategoryDistribution();
+    
+    // 设置默认日期
+    const today = new Date();
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(today.getDate() - 7);
+    
+    document.getElementById('start-date').value = oneWeekAgo.toISOString().split('T')[0];
+    document.getElementById('end-date').value = today.toISOString().split('T')[0];
+});
+</script>
+</body>
+</html>
