@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反馈与主动学习工作台 - 垃圾图片分类系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-y: auto;
+            background-attachment: fixed;
+        }
+        
+        /* 背景装饰 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -20px) rotate(5deg); }
+            50% { transform: translate(-10px, 20px) rotate(-5deg); }
+            75% { transform: translate(15px, 10px) rotate(3deg); }
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .container.wide {
+            max-width: 1200px;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo-emoji {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 10px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        select, input, textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #fafafa;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: white;
+        }
+        
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #333;
+            border: 2px solid #e8e8e8;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-small {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: 600;
+            color: #333;
+        }
+        
+        tr:hover td {
+            background: #f8f9fa;
+        }
+        
+        .feedback-item {
+            cursor: pointer;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+        
+        .status-processed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .status-ignored {
+            background: #f5f5f5;
+            color: #666;
+        }
+        
+        .info-box {
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            margin-bottom: 20px;
+        }
+        
+        .info-box.info {
+            border-color: #64b5f6;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+        
+        .info-box.success {
+            border-color: #81c784;
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        }
+        
+        .info-box.error {
+            border-color: #ef9a9a;
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container wide">
+    <div class="logo-emoji">📝</div>
+    <h1>反馈与主动学习工作台</h1>
+    <p class="subtitle">管理用户反馈，优化模型性能</p>
+    
+    <div class="form-group">
+        <label>反馈筛选</label>
+        <div class="input-group">
+            <select id="feedback-status" style="flex: 1; padding: 14px; border: 2px solid #e8e8e8; border-radius: 12px; font-size: 15px; background: #fafafa;">
+                <option value="all">全部状态</option>
+                <option value="pending">待处理</option>
+                <option value="processed">已处理</option>
+                <option value="ignored">已忽略</option>
+            </select>
+            <select id="feedback-category" style="flex: 1; padding: 14px; border: 2px solid #e8e8e8; border-radius: 12px; font-size: 15px; background: #fafafa;">
+                <option value="all">全部分类</option>
+                <option value="可回收物">可回收物</option>
+                <option value="厨余垃圾">厨余垃圾</option>
+                <option value="有害垃圾">有害垃圾</option>
+                <option value="其他垃圾">其他垃圾</option>
+            </select>
+            <button type="button" onclick="filterFeedback()" class="btn-small">
+                <span>🔍 筛选</span>
+            </button>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <!-- 反馈列表 -->
+        <div style="flex: 1; border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+            <h2>📋 反馈列表</h2>
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户</th>
+                        <th>时间</th>
+                        <th>垃圾名称</th>
+                        <th>错误分类</th>
+                        <th>正确分类</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                    <tr class="feedback-item" onclick="showFeedbackDetails(1)">
+                        <td>1</td>
+                        <td>user123</td>
+                        <td>2024-01-15 10:30</td>
+                        <td>外卖盒</td>
+                        <td>可回收物</td>
+                        <td>其他垃圾</td>
+                        <td><span style="background: #ffeb3b; color: #f57f17; padding: 4px 8px; border-radius: 12px; font-size: 12px;">待处理</span></td>
+                        <td><button type="button" onclick="event.stopPropagation(); showFeedbackDetails(1)" style="padding: 4px 8px; font-size: 12px;">查看</button></td>
+                    </tr>
+                    <tr class="feedback-item" onclick="showFeedbackDetails(2)">
+                        <td>2</td>
+                        <td>user456</td>
+                        <td>2024-01-15 09:15</td>
+                        <td>电池</td>
+                        <td>其他垃圾</td>
+                        <td>有害垃圾</td>
+                        <td><span style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">已处理</span></td>
+                        <td><button type="button" onclick="event.stopPropagation(); showFeedbackDetails(2)" style="padding: 4px 8px; font-size: 12px;">查看</button></td>
+                    </tr>
+                    <tr class="feedback-item" onclick="showFeedbackDetails(3)">
+                        <td>3</td>
+                        <td>user789</td>
+                        <td>2024-01-14 16:45</td>
+                        <td>咖啡杯</td>
+                        <td>可回收物</td>
+                        <td>其他垃圾</td>
+                        <td><span style="background: #ff9800; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">已忽略</span></td>
+                        <td><button type="button" onclick="event.stopPropagation(); showFeedbackDetails(3)" style="padding: 4px 8px; font-size: 12px;">查看</button></td>
+                    </tr>
+                    <tr class="feedback-item" onclick="showFeedbackDetails(4)">
+                        <td>4</td>
+                        <td>user234</td>
+                        <td>2024-01-14 14:20</td>
+                        <td>骨头</td>
+                        <td>其他垃圾</td>
+                        <td>厨余垃圾</td>
+                        <td><span style="background: #ffeb3b; color: #f57f17; padding: 4px 8px; border-radius: 12px; font-size: 12px;">待处理</span></td>
+                        <td><button type="button" onclick="event.stopPropagation(); showFeedbackDetails(4)" style="padding: 4px 8px; font-size: 12px;">查看</button></td>
+                    </tr>
+                    <tr class="feedback-item" onclick="showFeedbackDetails(5)">
+                        <td>5</td>
+                        <td>user567</td>
+                        <td>2024-01-14 11:05</td>
+                        <td>塑料瓶</td>
+                        <td>其他垃圾</td>
+                        <td>可回收物</td>
+                        <td><span style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">已处理</span></td>
+                        <td><button type="button" onclick="event.stopPropagation(); showFeedbackDetails(5)" style="padding: 4px 8px; font-size: 12px;">查看</button></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 反馈详情 -->
+        <div style="flex: 1; border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+            <h2>🔍 反馈详情</h2>
+            <div id="feedback-details">
+                <div style="text-align: center; padding: 100px 0;">
+                    <div style="font-size: 64px; color: #e8e8e8; margin-bottom: 20px;">📝</div>
+                    <p style="color: #999; font-size: 16px;">点击左侧列表查看反馈详情</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主动学习设置 -->
+    <div class="form-group">
+        <label>🎯 主动学习设置</label>
+        <div style="border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px; background: white;">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="margin-bottom: 15px;">学习参数</h3>
+                    <div class="form-group">
+                        <label>置信度阈值</label>
+                        <input type="range" id="confidence-threshold" min="0" max="100" value="70" style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                            <span>0%</span>
+                            <span id="threshold-value">70%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>批量学习大小</label>
+                        <select id="batch-size" style="width: 100%; padding: 14px; border: 2px solid #e8e8e8; border-radius: 12px; font-size: 15px; background: #fafafa;">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="margin-bottom: 15px;">学习状态</h3>
+                    <div class="info-box info">
+                        <p><strong>模型版本：</strong>v1.2</p>
+                        <p><strong>训练数据量：</strong>10,000 张图片</p>
+                        <p><strong>上次训练时间：</strong>2024-01-10 08:30</p>
+                        <p><strong>待标注样本：</strong>125 个</p>
+                    </div>
+                    <button type="button" onclick="startTraining()" style="margin-top: 20px;">
+                        <span>🚀 开始训练</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{{ url_for('auth.dashboard') }}" class="btn-link">
+            ← 返回仪表盘
+        </a>
+    </div>
+</div>
+
+<script>
+// 反馈数据
+const feedbackData = {
+    1: {
+        id: 1,
+        user: 'user123',
+        time: '2024-01-15 10:30',
+        garbageName: '外卖盒',
+        wrongCategory: '可回收物',
+        correctCategory: '其他垃圾',
+        status: 'pending',
+        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=takeaway%20box%20garbage&image_size=square',
+        note: '外卖盒应该是其他垃圾，因为它已经被污染了',
+        confidence: '85%'
+    },
+    2: {
+        id: 2,
+        user: 'user456',
+        time: '2024-01-15 09:15',
+        garbageName: '电池',
+        wrongCategory: '其他垃圾',
+        correctCategory: '有害垃圾',
+        status: 'processed',
+        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=battery%20garbage&image_size=square',
+        note: '电池是有害垃圾，含有有害物质',
+        confidence: '75%'
+    },
+    3: {
+        id: 3,
+        user: 'user789',
+        time: '2024-01-14 16:45',
+        garbageName: '咖啡杯',
+        wrongCategory: '可回收物',
+        correctCategory: '其他垃圾',
+        status: 'ignored',
+        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=coffee%20cup%20garbage&image_size=square',
+        note: '咖啡杯内层有塑料涂层，不可回收',
+        confidence: '80%'
+    },
+    4: {
+        id: 4,
+        user: 'user234',
+        time: '2024-01-14 14:20',
+        garbageName: '骨头',
+        wrongCategory: '其他垃圾',
+        correctCategory: '厨余垃圾',
+        status: 'pending',
+        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bone%20garbage&image_size=square',
+        note: '骨头应该是厨余垃圾',
+        confidence: '65%'
+    },
+    5: {
+        id: 5,
+        user: 'user567',
+        time: '2024-01-14 11:05',
+        garbageName: '塑料瓶',
+        wrongCategory: '其他垃圾',
+        correctCategory: '可回收物',
+        status: 'processed',
+        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=plastic%20bottle%20garbage&image_size=square',
+        note: '塑料瓶是可回收物',
+        confidence: '70%'
+    }
+};
+
+function showFeedbackDetails(id) {
+    const feedback = feedbackData[id];
+    const detailsContainer = document.getElementById('feedback-details');
+    
+    detailsContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="text-align: center;">
+                <img src="${feedback.image}" alt="垃圾图片" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-bottom: 15px;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <p><strong>反馈ID：</strong>${feedback.id}</p>
+                    <p><strong>用户：</strong>${feedback.user}</p>
+                    <p><strong>时间：</strong>${feedback.time}</p>
+                    <p><strong>垃圾名称：</strong>${feedback.garbageName}</p>
+                </div>
+                <div>
+                    <p><strong>错误分类：</strong><span style="color: #f44336;">${feedback.wrongCategory}</span></p>
+                    <p><strong>正确分类：</strong><span style="color: #4caf50;">${feedback.correctCategory}</span></p>
+                    <p><strong>识别置信度：</strong>${feedback.confidence}</p>
+                    <p><strong>状态：</strong>${getStatusLabel(feedback.status)}</p>
+                </div>
+            </div>
+            <div>
+                <p><strong>用户备注：</strong></p>
+                <p style="background: #f5f5f5; padding: 10px; border-radius: 8px;">${feedback.note}</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="processFeedback(${id}, 'processed')" ${feedback.status === 'processed' ? 'disabled' : ''} style="flex: 1;">
+                    <span>✅ 标记为已处理</span>
+                </button>
+                <button type="button" onclick="processFeedback(${id}, 'ignored')" ${feedback.status === 'ignored' ? 'disabled' : ''} style="flex: 1; background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+                    <span>❌ 标记为已忽略</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function getStatusLabel(status) {
+    switch(status) {
+        case 'pending':
+            return '<span style="background: #ffeb3b; color: #f57f17; padding: 4px 8px; border-radius: 12px; font-size: 12px;">待处理</span>';
+        case 'processed':
+            return '<span style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">已处理</span>';
+        case 'ignored':
+            return '<span style="background: #ff9800; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">已忽略</span>';
+        default:
+            return status;
+    }
+}
+
+function processFeedback(id, status) {
+    // 模拟处理反馈
+    alert(`反馈 ${id} 已标记为 ${status === 'processed' ? '已处理' : '已忽略'}`);
+    // 实际项目中这里会发送请求更新反馈状态
+}
+
+function filterFeedback() {
+    const status = document.getElementById('feedback-status').value;
+    const category = document.getElementById('feedback-category').value;
+    
+    // 模拟筛选
+    alert(`筛选条件：状态=${status}，分类=${category}`);
+    // 实际项目中这里会根据筛选条件更新反馈列表
+}
+
+function startTraining() {
+    // 模拟开始训练
+    alert('开始训练模型...');
+    // 实际项目中这里会触发模型训练流程
+}
+
+// 置信度阈值滑块
+const thresholdSlider = document.getElementById('confidence-threshold');
+const thresholdValue = document.getElementById('threshold-value');
+
+thresholdSlider.addEventListener('input', function() {
+    thresholdValue.textContent = this.value + '%';
+});
+
+// 为反馈列表项添加悬停效果
+const feedbackItems = document.querySelectorAll('.feedback-item');
+feedbackItems.forEach(item => {
+    item.addEventListener('mouseover', function() {
+        this.style.backgroundColor = '#f5f5f5';
+        this.style.cursor = 'pointer';
+    });
+    item.addEventListener('mouseout', function() {
+        this.style.backgroundColor = 'white';
+    });
+});
+</script>
+</body>
+</html>
