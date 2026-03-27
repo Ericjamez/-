@@ -120,3 +120,42 @@ class VerificationCode(db.Model):
         
         verification_code.mark_as_used()
         return True
+
+
+class GarbageCategory(db.Model):
+    """垃圾分类模型"""
+    __tablename__ = 'garbage_categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f'<GarbageCategory {self.name}>'
+
+
+class Feedback(db.Model):
+    """反馈信息模型"""
+    __tablename__ = 'feedbacks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    garbage_name = db.Column(db.String(100), nullable=False)
+    wrong_category_id = db.Column(db.Integer, db.ForeignKey('garbage_categories.id'), nullable=False)
+    correct_category_id = db.Column(db.Integer, db.ForeignKey('garbage_categories.id'), nullable=False)
+    status = db.Column(db.Enum('pending', 'processed', 'ignored'), default='pending', nullable=False, index=True)
+    image_path = db.Column(db.String(255))
+    note = db.Column(db.Text)
+    confidence = db.Column(db.Float)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # 关联关系
+    user = db.relationship('User', backref=db.backref('feedbacks', lazy=True))
+    wrong_category = db.relationship('GarbageCategory', foreign_keys=[wrong_category_id], backref=db.backref('wrong_feedbacks', lazy=True))
+    correct_category = db.relationship('GarbageCategory', foreign_keys=[correct_category_id], backref=db.backref('correct_feedbacks', lazy=True))
+    
+    def __repr__(self):
+        return f'<Feedback {self.id} - {self.garbage_name}>'

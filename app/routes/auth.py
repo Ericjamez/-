@@ -497,6 +497,72 @@ def submit_feedback():
     
     return jsonify({'success': True, 'message': '反馈提交成功，感谢您的帮助！'})
 
+# ==================== 反馈管理API ====================
+
+@auth_bp.route('/api/feedback/list')
+def get_feedback_list():
+    """获取反馈列表"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    # 实际项目中，这里应该从数据库中获取数据
+    # 目前返回空列表，表示没有反馈数据
+    feedback_list = []
+    
+    return jsonify({'success': True, 'data': feedback_list})
+
+@auth_bp.route('/api/feedback/details/<int:id>')
+def get_feedback_details(id):
+    """获取反馈详情"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    # 实际项目中，这里应该从数据库中获取数据
+    # 目前返回反馈不存在的错误信息
+    return jsonify({'success': False, 'message': '反馈不存在'})
+
+@auth_bp.route('/api/feedback/process/<int:id>', methods=['POST'])
+def process_feedback(id):
+    """处理反馈"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    status = request.form.get('status', '').strip()
+    if status not in ['processed', 'ignored']:
+        return jsonify({'success': False, 'message': '无效的状态'})
+    
+    # 这里可以添加处理反馈的逻辑，例如更新数据库
+    
+    return jsonify({'success': True, 'message': f'反馈 {id} 已标记为 {"已处理" if status == "processed" else "已忽略"}'})
+
+@auth_bp.route('/api/feedback/filter', methods=['POST'])
+def filter_feedback():
+    """筛选反馈"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    status = request.form.get('status', 'all').strip()
+    category = request.form.get('category', 'all').strip()
+    
+    # 实际项目中，这里应该从数据库中获取数据并筛选
+    # 目前返回空列表，表示没有符合条件的反馈数据
+    filtered_list = []
+    
+    return jsonify({'success': True, 'data': filtered_list})
+
+@auth_bp.route('/api/feedback/train', methods=['POST'])
+def start_training():
+    """开始训练"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    confidence_threshold = request.form.get('confidence_threshold', '70').strip()
+    batch_size = request.form.get('batch_size', '50').strip()
+    
+    # 这里可以添加开始训练的逻辑
+    
+    return jsonify({'success': True, 'message': '开始训练模型...'})
+
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     """登出"""

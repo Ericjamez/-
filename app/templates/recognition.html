@@ -154,7 +154,7 @@
         /* 主内容区域 */
         .main-content {
             padding: 60px 0;
-            background: white;
+            background: url('static/background/bg1.png') repeat;
         }
         
         .content-container {
@@ -288,6 +288,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             background: #f8f9fa;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         .upload-area:hover {
@@ -583,11 +588,11 @@
             border: 1px solid #f5c6cb;
         }
         
-        /* 底部信息样式 */
+        /* 底部信息样式 - 现代简约 */
         .footer {
-            background: #343a40;
-            color: white;
-            padding: 60px 0 30px;
+            background: white;
+            padding: 40px 0 20px;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
         }
         
         .footer-container {
@@ -599,62 +604,49 @@
         .footer-content {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
             gap: 40px;
             margin-bottom: 40px;
         }
         
         .footer-column {
             flex: 1;
-            min-width: 240px;
+            min-width: 200px;
         }
         
         .footer-column h3 {
-            font-size: 16px;
+            color: #2E7D32;
             margin-bottom: 20px;
-            color: white;
+            font-size: 16px;
             font-weight: 600;
-            position: relative;
-            padding-bottom: 10px;
-        }
-        
-        .footer-column h3::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 40px;
-            height: 2px;
-            background: #4CAF50;
         }
         
         .footer-links {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
         
         .footer-links li {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         .footer-links a {
-            color: #adb5bd;
+            color: #6c757d;
             text-decoration: none;
             transition: all 0.3s ease;
             font-size: 14px;
-            font-weight: 400;
         }
         
         .footer-links a:hover {
-            color: #4CAF50;
-            padding-left: 4px;
+            color: #2E7D32;
+            transform: translateX(4px);
         }
         
         .footer-copyright {
             text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            color: #adb5bd;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
             font-size: 14px;
         }
         
