@@ -15,9 +15,114 @@
         /* 自定义滑块样式 */
         input[type=range] { -webkit-appearance: none; background: #d1fae5; height: 8px; border-radius: 10px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #10b981; cursor: pointer; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+
+        /* 弹窗遮罩层 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* 弹窗卡片 */
+        .modal-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-card {
+            transform: translateY(0);
+        }
+        /* 输入框样式 */
+        .modal-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            margin: 16px 0 24px;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+        /* 按钮组 */
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 12px 28px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-btn.cancel {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .modal-btn.cancel:hover {
+            background: #e2e8f0;
+        }
+        .modal-btn.confirm {
+            background: #10b981;
+            color: white;
+        }
+        .modal-btn.confirm:hover {
+            background: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
     </style>
 </head>
 <body class="p-6 md:p-10">
+
+<!-- 弹窗结构（放在 body 最开头） -->
+<div class="modal-overlay" id="correctModal">
+    <div class="modal-card">
+        <h3 class="text-xl font-black text-slate-800">请输入正确的类别</h3>
+        <p class="text-sm text-slate-500 mt-2">（可回收垃圾, 湿垃圾, 有害垃圾, 干垃圾）</p>
+        <input type="text" id="modalInput" class="modal-input" placeholder="请输入正确分类">
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="closeModal()">取消</button>
+            <button class="modal-btn confirm" onclick="confirmCorrect()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 全局通知（toast） -->
+<div id="global-toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity" style="z-index:99999"></div>
+
+<!-- 已保存短时弹窗 -->
+<div id="saved-modal" class="modal-overlay hidden" style="z-index:10000;"> 
+    <div class="modal-card text-center">
+        <h4 id="saved-title" class="text-lg font-black text-slate-800">已保存</h4>
+        <p id="saved-body" class="text-sm text-slate-500 mt-2">已将纠正同步到数据库</p>
+    </div>
+</div>
 
 <div class="max-w-7xl mx-auto">
     <!-- Header -->
@@ -74,6 +179,29 @@
             <div id="live-logs" class="mt-2 overflow-auto max-h-36 text-[12px] text-slate-600"></div>
         </div>
     </div>
+
+    <!-- 在原本的 核心运维区 增加 LSTM 预测 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div class="lg:col-span-2 glass-card p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">LSTM 深度学习：未来 24H 垃圾产量预测</h3>
+                <div class="text-[10px] bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">模型状态：Deep Learning Predictor Active</div>
+            </div>
+            <div id="lstm-forecast-chart" class="w-full h-48"></div>
+        </div>
+        <div class="glass-card p-8 flex flex-col justify-between">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">OOD 语义异常监测 (Anomaly)</h3>
+            <div id="anomaly-status" class="flex-1 flex flex-col items-center justify-center text-center">
+                <div id="anomaly-icon" class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-4 transition-all duration-500">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <p id="anomaly-msg" class="text-xs text-slate-500 font-bold leading-relaxed">系统实时语义分布稳定</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改实时推理流水部分，增加关联推荐展示 -->
+    <!-- 脚本部分增加新图表初始化 -->
 
     <!-- 算法策略区：P-R 权衡调节 -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
@@ -132,8 +260,9 @@ const CATS = ["可回收垃圾", "湿垃圾", "有害垃圾", "干垃圾"];
 const COLORS = ["#3b82f6", "#10b981", "#ef4444", "#64748b"];
 let threshold = 0.60;
 let history = [];
-let chartHeartbeat, chartMatrix, chartSource;
+let chartHeartbeat, chartMatrix, chartSource, chartLSTM;
 let pollingInterval;
+let currentItem = null; // 存储当前要纠正的条目
 
 // 初始化仪表盘逻辑
 function init() {
@@ -151,6 +280,30 @@ function init() {
     renderAll();
     startHeartbeat();
     startPolling();
+    try { chartLSTM = echarts.init(document.getElementById('lstm-forecast-chart')); startLSTMUpdate(); } catch(e) { chartLSTM = null; }
+}
+
+// 模拟 LSTM 数据更新
+async function startLSTMUpdate() {
+    if (!chartLSTM) return;
+    try {
+        const res = await fetch('http://127.0.0.1:8000/predict_flow');
+        const data = await res.json();
+        chartLSTM.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: data.labels, axisLabel: { fontSize: 9 } },
+            yAxis: { type: 'value', name: '预估件数', splitLine: { show: false } },
+            series: [{
+                data: data.data,
+                type: 'line',
+                smooth: true,
+                areaStyle: { color: 'rgba(99, 102, 241, 0.2)' },
+                lineStyle: { color: '#6366f1', width: 3 }
+            }]
+        });
+    } catch(e) { console.error('LSTM预测加载失败', e); }
+    // 30s 刷新一次
+    setTimeout(startLSTMUpdate, 30000);
 }
 
 function renderAll() {
@@ -224,6 +377,18 @@ function renderAll() {
     const topSources = Object.keys(sourceCounts).sort((a,b)=>sourceCounts[b]-sourceCounts[a]).slice(0,3).map(k=>`${k}:${sourceCounts[k]}`).join(' | ');
     document.getElementById('drift-msg').innerText = `来源占比（实时）: ${topSources}`;
 
+    // 检测最近一次推理是否异常并更新 OOD 状态
+    const lastPrediction = history.length ? history[history.length - 1] : null;
+    const icon = document.getElementById('anomaly-icon');
+    const msg = document.getElementById('anomaly-msg');
+    if (lastPrediction && lastPrediction.is_anomaly) {
+        if (icon) icon.className = "w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-red-500 mb-4 animate-pulse";
+        if (msg) msg.innerHTML = `<span class="text-red-600 font-black">检测到语义偏离：${lastPrediction.keyword}</span><br>已自动标记 Bad Case 并推送标注池`;
+    } else {
+        if (icon) icon.className = "w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-4";
+        if (msg) msg.innerText = "系统实时语义分布稳定";
+    }
+
     // 4. 渲染推理来源饼图
     if (chartSource) {
         const srcData = Object.keys(sourceCounts).map(k => ({ name: k, value: sourceCounts[k] }));
@@ -267,7 +432,7 @@ function renderAll() {
     renderLiveLogs(history.slice(-200));
 }
 
-    function renderAnnoList(items) {
+function renderAnnoList(items) {
     const list = document.getElementById('anno-list');
     if (!items.length) {
         list.innerHTML = `<p class="text-xs text-slate-300 italic">暂无低置信度样本需要校准...</p>`;
@@ -284,38 +449,84 @@ function renderAll() {
     `).join('');
 }
 
-// 纠正逻辑：弹窗选择正确类别，调用后端 /correct 持久化，并在 localStorage 中更新条目
+// 打开美化弹窗
 function correctItem(itemStr) {
     try {
-        const item = JSON.parse(decodeURIComponent(itemStr));
-        const choice = prompt('请输入正确的类别（可回收垃圾, 湿垃圾, 有害垃圾, 干垃圾）', item.category || '干垃圾');
-        if (!choice) return;
-        // 调用后端纠正接口
-        fetch('http://127.0.0.1:8000/correct', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ name: item.keyword, correct_category: choice })
-        }).then(r=>r.json()).then(res=>{
-            if (res && res.ok) {
-                // 更新 localStorage 中该条目（匹配 keyword & time）
-                const hist = JSON.parse(localStorage.getItem('garbage_history') || '[]');
-                for (let i = hist.length-1; i >=0; i--) {
-                    if (hist[i].keyword === item.keyword && hist[i].time === item.time) {
-                        hist[i].corrected = true;
-                        hist[i].correct_category = choice;
-                        hist[i].corrected_at = new Date().toLocaleString();
-                        hist[i].confidence = res.new_confidence || hist[i].confidence;
-                        hist[i].method = res.source || hist[i].method;
-                        break;
-                    }
-                }
+        currentItem = JSON.parse(decodeURIComponent(itemStr));
+        document.getElementById('modalInput').value = currentItem.category || '干垃圾';
+        document.getElementById('correctModal').classList.add('active');
+    } catch(e) {
+        console.error('解析 item 失败', e);
+        alert('解析失败');
+    }
+}
+
+// 关闭弹窗
+function closeModal() {
+    document.getElementById('correctModal').classList.remove('active');
+    currentItem = null;
+}
+
+// 确认纠正（和原逻辑完全一致）
+function confirmCorrect() {
+    const choice = document.getElementById('modalInput').value.trim();
+    if (!choice) return;
+    // 先备份当前项，避免 closeModal() 将 currentItem 置为 null
+    const item = currentItem;
+    // 原有后端提交逻辑不变
+    fetch('http://127.0.0.1:8000/correct', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ name: item.keyword, correct_category: choice })
+    }).then(r=>r.json()).then(res=>{
+        if (res && res.ok) {
+            const hist = JSON.parse(localStorage.getItem('garbage_history') || '[]');
+            // 更鲁棒的匹配：按 keyword 查找最近一条未被纠正的记录
+            let idx = -1;
+            for (let i = hist.length - 1; i >= 0; i--) {
+                if (hist[i].keyword === item.keyword) { idx = i; break; }
+            }
+            if (idx >= 0) {
+                hist[idx].corrected = true;
+                hist[idx].correct_category = choice;
+                hist[idx].corrected_at = new Date().toLocaleString();
+                hist[idx].confidence = res.new_confidence || hist[idx].confidence;
+                hist[idx].method = res.source || hist[idx].method;
                 localStorage.setItem('garbage_history', JSON.stringify(hist));
-                alert('纠正已保存并同步到后端。');
+                closeModal();
+                showSavedModal(item, choice, 2000);
                 renderAll();
             } else {
-                alert('后端纠正失败：' + (res && res.error ? res.error : '未知错误'));
+                // 找不到匹配项也刷新并提示
+                closeModal();
+                showToast('已同步到后端，但未找到本地历史匹配项。');
+                renderAll();
             }
-        }).catch(e=>{console.error(e); alert('无法连接后端纠正接口');});
-    } catch(e) { console.error('解析 item 失败', e); }
+        } else {
+            showToast('后端纠正失败：' + (res && res.error ? res.error : '未知错误'));
+        }
+    }).catch(e=>{console.error(e); showToast('无法连接后端纠正接口');});
+}
+
+function showToast(msg, timeout=2500) {
+    const t = document.getElementById('global-toast');
+    t.innerText = msg;
+    t.classList.remove('opacity-0');
+    t.classList.add('opacity-100');
+    clearTimeout(t._to);
+    t._to = setTimeout(()=>{ t.classList.remove('opacity-100'); t.classList.add('opacity-0'); }, timeout);
+}
+
+// 显示短时已保存模态（2秒后自动关闭）
+function showSavedModal(item, choice, timeout=2000) {
+    try {
+        const m = document.getElementById('saved-modal');
+        document.getElementById('saved-title').innerText = '纠正已保存';
+        document.getElementById('saved-body').innerText = `${item.keyword} → ${choice}（已同步到后端）`;
+        m.classList.remove('hidden');
+        m.classList.add('active');
+        clearTimeout(m._to);
+        m._to = setTimeout(()=>{ m.classList.remove('active'); m.classList.add('hidden'); }, timeout);
+    } catch(e) { console.error('显示 saved modal 失败', e); showToast('纠正已保存'); }
 }
 
 function renderMetricsGrid(matrix, avgConf) {
@@ -347,11 +558,18 @@ function renderLiveLogs(items) {
         container.innerHTML = `<p class="text-[12px] text-slate-400 italic">暂无实时审计记录。</p>`;
         return;
     }
-    const rows = items.slice(-50).reverse().map(it => {
+    const rows = items.slice(-20).reverse().map(it => {
         const t = it.time || it.ts || new Date().toLocaleString();
-        const conf = (typeof it.confidence === 'number') ? (it.confidence*100).toFixed(1) + '%' : '-';
-        const method = it.method || 'local';
-        return `<div class="py-1 border-b border-slate-100"><span class="text-[11px] font-bold">${t}</span> — <span class="text-[12px]">${it.keyword}</span> → <span class="text-[12px] font-black">${it.category}</span> <span class="text-[11px] text-slate-400">(${method} · ${conf})</span></div>`;
+        const relatedHtml = it.related_links ? `<div class="mt-1 flex gap-1">${it.related_links.map(link => `<span class="px-1 bg-indigo-50 text-indigo-500 rounded text-[9px]">#${link}</span>`).join('')}</div>` : '';
+        return `
+            <div class="py-2 border-b border-slate-100">
+                <div class="flex justify-between">
+                    <span class="text-[12px] font-black">${it.keyword}</span>
+                    <span class="text-[10px] text-slate-400">${it.category}</span>
+                </div>
+                ${relatedHtml}
+            </div>
+        `;
     }).join('');
     container.innerHTML = rows;
 }

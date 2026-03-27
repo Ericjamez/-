@@ -12,10 +12,130 @@
         .emerald-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
         .train-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+        /* 悬浮AI机器人 新增 */
+        .chat-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(16,185,129,0.3);
+            z-index: 9999;
+            transition: all 0.3s;
+        }
+        .chat-float:hover { transform: scale(1.1); }
+        /* 悬浮抖动与漂浮动画 */
+        @keyframes float-bob {
+            0% { transform: translateY(0) rotate(-2deg); }
+            25% { transform: translateY(-6px) rotate(3deg); }
+            50% { transform: translateY(0) rotate(-1deg); }
+            75% { transform: translateY(-4px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(-2deg); }
+        }
+        .chat-float { animation: float-bob 3.2s ease-in-out infinite; }
+        .chat-float:hover { animation-play-state: paused; }
+        .chat-float img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+        .chat-modal {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            max-width: 90vw;
+            height: 600px;
+            max-height: 70vh;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 9998;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chat-close {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.12);
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .chat-close:hover { background: rgba(255,255,255,0.18); }
+        .chat-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background: #f9fdfb;
+        }
+        .chat-input {
+            border-top: 1px solid #eee;
+            padding: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .chat-input input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 10px 14px;
+            outline: none;
+        }
+        .chat-input button {
+            background: #10b981;
+            color: white;
+            border-radius: 16px;
+            padding: 0 16px;
+            border: none;
+            font-weight: bold;
+        }
+        .msg-bot {
+            background: #e2f7eF;
+            color: #065f46;
+            padding: 10px 14px;
+            border-radius: 18px 18px 18px 4px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            font-size: 14px;
+            width: fit-content;
+        }
+        .msg-user {
+            background: #10b981;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 18px 18px 4px 18px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            font-size: 14px;
+            width: fit-content;
+            margin-left: auto;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-20 px-4 md:px-8">
 
+<!-- ==================== 你原有代码 完全不变 ==================== -->
 <div class="max-w-7xl mx-auto py-10">
     <header class="flex flex-col md:flex-row justify-between items-center mb-12">
         <div class="flex items-center space-x-6">
@@ -116,7 +236,26 @@
     </div>
 </div>
 
+<!-- ==================== 新增：悬浮AI机器人 + 对话窗口 ==================== -->
+<div class="chat-float" id="chatBtn">
+    <img id="chatAvatar" src="robot_avatar.png" alt="机器人头像" onerror="(function(e){const p=document.getElementById('chatBtn'); p.innerText='🤖'; p.style.background='linear-gradient(135deg,#10b981,#059669)';})();" />
+</div>
+<div class="chat-modal" id="chatModal">
+    <div class="chat-header">
+        <span>垃圾分类智能助手</span>
+        <div class="chat-close" id="chatClose" title="关闭">✕</div>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="msg-bot">你好！我是垃圾分类智能助手，有什么可以帮你？</div>
+    </div>
+    <div class="chat-input">
+        <input id="chatInput" placeholder="请输入你的问题..." autocomplete="off">
+        <button id="sendChat">发送</button>
+    </div>
+</div>
+
 <script>
+// ==================== 你原有脚本 完全不变 ====================
 const categoryMap = {
     "可回收垃圾": { color: "#3b82f6", icon: "♻️", tip: "适宜回收利用，可循环加工再利用" },
     "有害垃圾": { color: "#ef4444", icon: "⚠️", tip: "含有毒有害物质，需特殊安全处理" },
@@ -129,7 +268,6 @@ let chart;
 
 window.onload = () => {
     initChart();
-    // 不再在输入时自动推理，改由用户点击按钮触发推理
     const inputEl = document.getElementById('ai-input');
     const inferBtn = document.createElement('button');
     inferBtn.id = 'btn-infer';
@@ -139,7 +277,6 @@ window.onload = () => {
         const val = inputEl.value.trim();
         if (!val) return;
         infer(val).then(res => {
-            // 推理成功后保存到 localStorage，标记为 confirmed
             try {
                 const hist = JSON.parse(localStorage.getItem('garbage_history') || '[]');
                 const entry = {
@@ -162,7 +299,6 @@ window.onload = () => {
             } catch(e) { console.error('保存 history 失败', e); }
         }).catch(()=>{});
     };
-    // 将按钮挂到输入右侧
     const wrapper = document.querySelector('.relative.group .absolute.right-10');
     if (wrapper) wrapper.innerHTML = '';
     const rightContainer = document.querySelector('.relative.group');
@@ -195,7 +331,6 @@ async function infer(val) {
     } catch (e) {
     console.error("后端未连接", e);
     document.getElementById('status-text').innerText = "后端未连接";
-    // 返回兜底结果，保证调用处可以保存历史（标记为 confirmed）
     return { category: '干垃圾', confidence: 0, method: 'offline-fallback', guide: null };
 }
 }
@@ -213,7 +348,6 @@ function updateUI(info, category, conf, guide, matched_sample, tokens = [], toke
     document.getElementById('conf-val').innerText = (conf*100).toFixed(1) + '%';
     document.getElementById('conf-bar').style.width = (conf*100) + '%';
     document.getElementById('conf-bar').style.backgroundColor = info.color;
-    // 展示优先级：后端的 item 级 guide > matched_sample 指示 > 类级 tip
     const guideEl = document.getElementById('res-guide');
     if (guide) {
         guideEl.innerText = guide;
@@ -223,7 +357,6 @@ function updateUI(info, category, conf, guide, matched_sample, tokens = [], toke
         guideEl.innerText = info.tip;
     }
 
-    // 渲染 token 向量拆分展示（展示 token 及其向量模长，颜色强度反映模长）
     const tokenViz = document.getElementById('token-viz');
     tokenViz.innerHTML = '';
     if (tokens && tokens.length) {
@@ -289,6 +422,81 @@ function initChart() {
 }
 
 window.onresize = () => chart && chart.resize();
+
+// ==================== 新增：智谱AI 对话功能 ====================
+const chatBtn = document.getElementById('chatBtn');
+const chatModal = document.getElementById('chatModal');
+const chatClose = document.getElementById('chatClose');
+const sendChat = document.getElementById('sendChat');
+const chatInput = document.getElementById('chatInput');
+const chatBody = document.getElementById('chatBody');
+const chatAvatar = document.getElementById('chatAvatar');
+
+chatBtn.onclick = () => {
+    chatModal.style.display = chatModal.style.display === 'flex' ? 'none' : 'flex';
+};
+
+// 绑定关闭叉
+if (chatClose) chatClose.onclick = () => { chatModal.style.display = 'none'; };
+
+// 鼠标按住可拖拽小机器人（简单实现）
+let dragging = false, startX=0, startY=0, origRight=30, origBottom=30;
+chatBtn.addEventListener('mousedown', (e)=>{
+    dragging = true; startX = e.clientX; startY = e.clientY; chatBtn.style.transition='none';
+});
+window.addEventListener('mouseup', ()=>{ if (dragging) { dragging=false; chatBtn.style.transition='all 0.3s'; }});
+window.addEventListener('mousemove', (e)=>{
+    if (!dragging) return;
+    const dx = startX - e.clientX; const dy = startY - e.clientY;
+    chatBtn.style.right = (origRight + dx) + 'px'; chatBtn.style.bottom = (origBottom + dy) + 'px';
+});
+
+// 如果用户提供 avatar，稍微放大并添加阴影
+if (chatAvatar) {
+    chatAvatar.style.boxShadow = '0 6px 20px rgba(2,6,23,0.12)';
+}
+
+async function callZhipuAI(message) {
+    const API_KEY = "69c729c061af4cf590f6079d0ea1c1cb.J7RQE5IslWO6rnzT"; // 替换成你自己的
+    const response = await fetch("https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+            model: "glm-4",
+            messages: [
+                { role: "system", content: "你是专业的垃圾分类助手，只回答垃圾分类相关问题，回答简洁准确、专业友好。" },
+                { role: "user", content: message }
+            ],
+            temperature: 0.3
+        })
+    });
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "抱歉，我暂时无法回答。";
+}
+
+function addMessage(text, isUser = false) {
+    const div = document.createElement('div');
+    div.className = isUser ? 'msg-user' : 'msg-bot';
+    div.innerText = text;
+    chatBody.appendChild(div);
+    chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+sendChat.onclick = async () => {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    addMessage(msg, true);
+    chatInput.value = '';
+    const reply = await callZhipuAI(msg);
+    addMessage(reply);
+};
+
+chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChat.click();
+});
 </script>
 </body>
 </html>
