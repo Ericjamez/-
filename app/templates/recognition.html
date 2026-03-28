@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI识别交互中心 - 垃圾图片分类系统</title>
+    <title>图片识别交互中心 - 垃圾图片分类系统</title>
     <style>
         /* 全局样式重置 */
         * {
@@ -104,7 +104,7 @@
         /* 英雄区域样式 - 简洁现代 */
         .hero {
             background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-            padding: 60px 0;
+            padding: 15px 0;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -151,16 +151,21 @@
             line-height: 1.6;
         }
         
-        /* 主内容区域 */
+        /* 主内容区域 - 修复背景图全屏显示 */
         .main-content {
             padding: 60px 0;
-            background: url('static/background/bg1.png') repeat;
+            /* 背景图设置 */
+            background-image: url('static/background/bg1.png');
+            background-position: center center; /* 居中 */
+            background-repeat: no-repeat; /* 不重复 */
+
         }
-        
+
         .content-container {
             max-width: 800px;
             margin: 0 auto;
             padding: 0 24px;
+
         }
         
         /* 表单和组件样式 */
@@ -794,22 +799,12 @@
             {% if 'user_id' in session %}
             <li>
                 <a href="{{ url_for('auth.recognition') }}">
-                    <span>🔍</span> AI识别
+                    <span>🔍</span> 图片识别
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('auth.knowledge') }}">
                     <span>🧠</span> 知识图谱
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.analytics') }}">
-                    <span>📊</span> 性能统计
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.feedback') }}">
-                    <span>📝</span> 反馈学习
                 </a>
             </li>
             <li>
@@ -847,9 +842,9 @@
 <div class="hero">
     <div class="hero-container">
         <div class="hero-content">
-            <h1 class="hero-title">AI识别交互中心</h1>
+            <h1 class="hero-title">图片识别交互中心</h1>
             <p class="hero-subtitle">
-                上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达95%以上。
+                上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达80%以上。
             </p>
         </div>
     </div>
@@ -908,7 +903,7 @@
                                     <img id="preview-img" src="" alt="预览图片" class="preview-image">
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 12px; margin-top: 16px;">
+                            <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: center;">
                                 <button type="button" id="remove-btn" onclick="removeImage()" class="btn-secondary">
                                     <span>🗑️</span> 移除图片
                                 </button>
@@ -924,7 +919,7 @@
                         <div class="form-group">
                             <label>拍照识别</label>
                             <div class="camera-container">
-                                <video id="camera" width="100%" height="300" style="display: none;"></video>
+                                <video id="camera" autoplay playsinline style="display: none; width: 100%; max-height: 300px; object-fit: cover;"></video>
                                 <canvas id="camera-preview" class="camera-preview" style="display: none;"></canvas>
                                 <div id="camera-placeholder" class="upload-placeholder">📷</div>
                                 <button type="button" id="start-camera" onclick="startCamera()" class="btn-primary">
@@ -937,9 +932,11 @@
                                     <span>⏹️</span> 停止摄像
                                 </button>
                             </div>
-                            <button type="button" id="recognize-btn-camera" onclick="recognizeImage()" class="btn-primary" style="margin-top: 16px;">
-                                <span>🤖</span> 开始识别
-                            </button>
+                            <div style="display: flex; justify-content: center; margin-top: 16px;">
+                                <button type="button" id="recognize-btn-camera" onclick="recognizeImage()" class="btn-primary">
+                                    <span>🤖</span> 开始识别
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -976,12 +973,9 @@
                         <p id="knowledge-content">加载中...</p>
                     </div>
                     
-                    <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <div style="display: flex; justify-content: center; margin-top: 24px;">
                         <button type="button" onclick="feedback()" class="btn-secondary">
                             <span>📝</span> 反馈错误
-                        </button>
-                        <button type="button" onclick="resetRecognition()" class="btn-secondary">
-                            <span>🔄</span> 重新识别
                         </button>
                     </div>
                 </div>
@@ -996,6 +990,10 @@
                     <span>反馈错误</span>
                 </div>
                 <p class="hero-subtitle" style="margin-bottom: 24px;">如果识别结果不正确，请告诉我们真实的分类</p>
+                <div class="form-group">
+                    <label>垃圾名称</label>
+                    <input type="text" id="garbage-name" placeholder="请输入垃圾名称" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: #f8f9fa;">
+                </div>
                 <div class="form-group">
                     <label>真实垃圾分类</label>
                     <select id="real-category" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: #f8f9fa;">
@@ -1043,9 +1041,8 @@
                 <ul class="footer-links">
                     <li><a href="{{ url_for('auth.index') }}">首页</a></li>
                     {% if 'user_id' in session %}
-                    <li><a href="{{ url_for('auth.recognition') }}">AI识别</a></li>
+                    <li><a href="{{ url_for('auth.recognition') }}">图片识别</a></li>
                     <li><a href="{{ url_for('auth.knowledge') }}">知识图谱</a></li>
-                    <li><a href="{{ url_for('auth.analytics') }}">性能统计</a></li>
                     {% else %}
                     <li><a href="{{ url_for('auth.login') }}">登录</a></li>
                     <li><a href="{{ url_for('auth.register') }}">注册</a></li>
@@ -1075,7 +1072,34 @@
 let currentMode = 'upload';
 let selectedImage = null;
 let cameraStream = null;
-let hasRecognized = false; // 是否已经识别过
+let hasRecognized = false;
+let currentRecordId = null;
+let lastRecognizedImageId = null;
+
+function getImageId(file) {
+    if (!file) return null;
+    return file.name + '_' + file.size + '_' + file.lastModified;
+}
+
+async function confirmPreviousRecognition() {
+    const currentImageId = getImageId(selectedImage);
+    if (currentRecordId && hasRecognized && lastRecognizedImageId && lastRecognizedImageId !== currentImageId) {
+        try {
+            await fetch(`/confirm-recognition/${currentRecordId}`, {
+                method: 'POST'
+            });
+            currentRecordId = null;
+        } catch (error) {
+            console.error('确认识别结果失败:', error);
+        }
+    }
+}
+
+window.addEventListener('beforeunload', function() {
+    if (currentRecordId && hasRecognized) {
+        navigator.sendBeacon(`/confirm-recognition/${currentRecordId}`);
+    }
+});
 
 function switchMode(mode) {
     currentMode = mode;
@@ -1175,10 +1199,23 @@ uploadArea.addEventListener('drop', function(e) {
 });
 
 function removeImage() {
+    if (currentRecordId && hasRecognized) {
+        fetch(`/confirm-recognition/${currentRecordId}`, { method: 'POST' });
+    }
+    
     selectedImage = null;
+    currentRecordId = null;
+    lastRecognizedImageId = null;
     document.getElementById('image-upload').value = '';
     document.getElementById('image-preview').style.display = 'none';
     document.getElementById('upload-preview').style.display = 'block';
+    
+    // 隐藏识别结果
+    document.getElementById('recognition-result').style.display = 'none';
+    const layoutContainer = document.querySelector('.layout-container');
+    layoutContainer.classList.remove('has-result');
+    const resultCategory = document.getElementById('result-category');
+    resultCategory.classList.remove('highlight');
     
     // 重置识别标记和按钮文本
     hasRecognized = false;
@@ -1195,29 +1232,38 @@ async function startCamera() {
             return;
         }
         
-        // 请求相机权限
-        cameraStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            } 
-        });
-        
+        // 先显示视频元素
         const camera = document.getElementById('camera');
-        camera.srcObject = cameraStream;
-        
-        // 等待视频元数据加载完成后播放
-        camera.onloadedmetadata = function() {
-            camera.play();
-        };
-        
         camera.style.display = 'block';
         document.getElementById('camera-placeholder').style.display = 'none';
         document.getElementById('start-camera').style.display = 'none';
         document.getElementById('take-photo').style.display = 'inline-block';
         document.getElementById('stop-camera').style.display = 'inline-block';
+        
+        // 请求相机权限
+        cameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'environment'
+            } 
+        });
+        
+        // 设置视频源
+        camera.srcObject = cameraStream;
+        
+        // 确保视频播放
+        camera.play().catch(err => console.log('自动播放失败:', err));
+        
     } catch (error) {
         console.error('相机错误:', error);
+        
+        // 恢复UI状态
+        document.getElementById('camera').style.display = 'none';
+        document.getElementById('camera-placeholder').style.display = 'block';
+        document.getElementById('start-camera').style.display = 'inline-block';
+        document.getElementById('take-photo').style.display = 'none';
+        document.getElementById('stop-camera').style.display = 'none';
         
         let errorMessage = '无法访问相机';
         let solution = '';
@@ -1259,7 +1305,11 @@ function takePhoto() {
     // 将 canvas 转换为 blob
     canvas.toBlob(function(blob) {
         if (blob) {
-            selectedImage = new File([blob], 'camera.jpg', { type: 'image/jpeg' });
+            const timestamp = Date.now();
+            selectedImage = new File([blob], `camera_${timestamp}.jpg`, { 
+                type: 'image/jpeg',
+                lastModified: timestamp
+            });
             camera.style.display = 'none';
             canvas.style.display = 'block';
             console.log('拍照成功，图片大小:', blob.size, '字节');
@@ -1270,6 +1320,10 @@ function takePhoto() {
 }
 
 function stopCamera() {
+    if (currentRecordId && hasRecognized) {
+        fetch(`/confirm-recognition/${currentRecordId}`, { method: 'POST' });
+    }
+    
     if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
@@ -1281,6 +1335,15 @@ function stopCamera() {
     document.getElementById('take-photo').style.display = 'none';
     document.getElementById('stop-camera').style.display = 'none';
     selectedImage = null;
+    currentRecordId = null;
+    lastRecognizedImageId = null;
+    
+    // 隐藏识别结果
+    document.getElementById('recognition-result').style.display = 'none';
+    const layoutContainer = document.querySelector('.layout-container');
+    layoutContainer.classList.remove('has-result');
+    const resultCategory = document.getElementById('result-category');
+    resultCategory.classList.remove('highlight');
     
     // 重置识别标记和按钮文本
     hasRecognized = false;
@@ -1295,6 +1358,8 @@ async function recognizeImage() {
         return;
     }
     
+    await confirmPreviousRecognition();
+    
     // 获取当前模式的识别按钮
     const btnId = currentMode === 'upload' ? 'recognize-btn' : 'recognize-btn-camera';
     const btn = document.getElementById(btnId);
@@ -1305,6 +1370,10 @@ async function recognizeImage() {
     try {
         const formData = new FormData();
         formData.append('image', selectedImage);
+        
+        if (currentRecordId) {
+            formData.append('record_id', currentRecordId);
+        }
         
         const response = await fetch('/recognize', {
             method: 'POST',
@@ -1325,6 +1394,12 @@ async function recognizeImage() {
             document.getElementById('result-confidence').textContent = (data.result.confidence * 100).toFixed(2) + '%';
             document.getElementById('result-time').textContent = data.result.time + '秒';
             document.getElementById('knowledge-content').textContent = data.knowledge;
+            
+            // 保存识别记录ID
+            if (data.result.record_id) {
+                currentRecordId = data.result.record_id;
+                lastRecognizedImageId = getImageId(selectedImage);
+            }
             
             // 标记已识别
             hasRecognized = true;
@@ -1353,6 +1428,7 @@ function closeFeedback() {
 async function submitFeedback() {
     const realCategory = document.getElementById('real-category').value;
     const note = document.getElementById('feedback-note').value;
+    const garbageName = document.getElementById('garbage-name').value || '-';
     
     if (!realCategory) {
         alert('请选择真实的垃圾分类');
@@ -1363,6 +1439,19 @@ async function submitFeedback() {
         const formData = new FormData();
         formData.append('real_category', realCategory);
         formData.append('note', note);
+        
+        // 获取识别结果信息
+        const resultCategory = document.getElementById('result-category').textContent;
+        const resultConfidence = document.getElementById('result-confidence').textContent.replace('%', '');
+        
+        formData.append('garbage_name', garbageName);
+        formData.append('wrong_category', resultCategory);
+        formData.append('confidence', resultConfidence);
+        
+        if (currentRecordId) {
+            formData.append('record_id', currentRecordId);
+        }
+        
         if (selectedImage) {
             formData.append('image', selectedImage);
         }
@@ -1375,6 +1464,8 @@ async function submitFeedback() {
         const data = await response.json();
         if (data.success) {
             alert('反馈提交成功，感谢您的帮助！');
+            hasRecognized = false;
+            currentRecordId = null;
             closeFeedback();
         } else {
             alert('反馈提交失败：' + data.message);
@@ -1385,7 +1476,7 @@ async function submitFeedback() {
     }
 }
 
-function resetRecognition() {
+async function resetRecognition() {
     // 移除has-result类
     const layoutContainer = document.querySelector('.layout-container');
     layoutContainer.classList.remove('has-result');
@@ -1397,19 +1488,13 @@ function resetRecognition() {
     const resultCategory = document.getElementById('result-category');
     resultCategory.classList.remove('highlight');
     
-    // 重置识别标记
+    // 重置识别标记（保持currentRecordId和lastRecognizedImageId不变，允许用户重新识别同一张图片并提交反馈）
     hasRecognized = false;
     
     // 重置按钮文本
     const btnId = currentMode === 'upload' ? 'recognize-btn' : 'recognize-btn-camera';
     const btn = document.getElementById(btnId);
     btn.innerHTML = '<span>🤖 开始识别</span>';
-    
-    if (currentMode === 'upload') {
-        removeImage();
-    } else {
-        stopCamera();
-    }
 }
 
 // 点击模态框外部关闭

@@ -14,7 +14,7 @@ TRASH_CLASSES = ['厨余垃圾', '可回收物', '有害垃圾', '其他垃圾']
 # 模型加载函数
 def load_model():
     """加载训练好的ResNet50模型"""
-    model_path = os.path.join('dataset', 'model', 'best_trash_4class.pth')
+    model_path = os.path.join('app', 'dataset', 'model', 'best_trash_4class.pth')
     
     # 检查模型文件是否存在
     if not os.path.exists(model_path):

@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计 - 垃圾图片分类系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #16A34A;
+            --primary-light: #22C55E;
+            --primary-lighter: #86EFAC;
+            --primary-dark: #15803D;
+            --primary-darker: #166534;
+            --accent: #0891B2;
+            --accent-light: #22D3EE;
+            --cta: #F59E0B;
+            --cta-hover: #D97706;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+            --bg-main: #F0FDF4;
+            --bg-card: #FFFFFF;
+            --bg-hover: #DCFCE7;
+            --bg-muted: #ECFDF5;
+            --text-primary: #14532D;
+            --text-secondary: #166534;
+            --text-muted: #6B7280;
+            --border: #D1FAE5;
+            --border-light: #BBF7D0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --transition: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-main);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .navbar {
+            background: white;
+            padding: 12px 0;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #2E7D32;
+            font-weight: 700;
+        }
+
+        .navbar-brand span {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover span {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .navbar-menu {
+            list-style: none;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-menu li a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .navbar-menu li a:hover {
+            background: #f0f7f0;
+            color: #2E7D32;
+            transform: translateY(-1px);
+        }
+
+        .navbar-menu li .logout-btn {
+            color: #dc3545;
+        }
+
+        .navbar-menu li .logout-btn:hover {
+            background: #f8d7da;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+            animation: fadeInDown 0.4s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .page-header-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .page-header-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .page-header-text p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            transition: box-shadow var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            min-width: 160px;
+            font-family: inherit;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-cta {
+            background: var(--cta);
+            color: white;
+        }
+
+        .btn-cta:hover {
+            background: var(--cta-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .stat-card.success::before {
+            background: var(--success);
+        }
+
+        .stat-card.warning::before {
+            background: var(--cta);
+        }
+
+        .stat-card.info::before {
+            background: var(--info);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-lighter);
+        }
+
+        .stat-card .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            background: var(--bg-hover);
+            font-size: 20px;
+        }
+
+        .stat-card.success .stat-icon {
+            background: #D1FAE5;
+        }
+
+        .stat-card.warning .stat-icon {
+            background: #FEF3C7;
+        }
+
+        .stat-card.info .stat-icon {
+            background: #DBEAFE;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--bg-muted);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .pagination button:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--bg-hover);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding: 0 8px;
+        }
+
+        .export-options {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-muted);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+
+        .checkbox-group:hover {
+            background: var(--bg-hover);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-success {
+            background: var(--bg-hover);
+            color: var(--primary-dark);
+        }
+
+        .badge-danger {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        .badge-warning {
+            background: #FEF3C7;
+            color: #B45309;
+        }
+
+        .badge-info {
+            background: #DBEAFE;
+            color: var(--info);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .loading-spinner {
+                animation: none;
+                border-top-color: var(--primary);
+            }
+            
+            *, *::before, *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .rank-1 {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: white;
+        }
+
+        .rank-2 {
+            background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+            color: white;
+        }
+
+        .rank-3 {
+            background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+            color: white;
+        }
+
+        .rank-other {
+            background: var(--bg-muted);
+            color: var(--text-secondary);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            animation: slideInUp 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.success {
+            background: var(--primary);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-container {
+                flex-direction: column;
+                height: auto;
+                padding: 12px 0;
+                gap: 12px;
+            }
+
+            .navbar-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .filter-group input,
+            .filter-group select {
+                min-width: 100%;
+            }
+
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('auth.admin_dashboard') }}" class="navbar-brand">
+                <span>🗑️</span>
+                <span>垃圾图片分类系统</span>
+            </a>
+            <ul class="navbar-menu">
+                <li>
+                    <a href="{{ url_for('auth.admin_dashboard') }}">
+                        <span>🏠</span> 管理首页
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.user_management') }}">
+                        <span>👥</span> 用户管理
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.feedback') }}">
+                        <span>📝</span> 反馈学习
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.admin_analytics') }}">
+                        <span>📊</span> 数据统计
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+                        <span>🚪</span> 退出
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="page-header">
+            <div class="page-header-content">
+                <div class="page-header-icon">📊</div>
+                <div class="page-header-text">
+                    <h1>数据统计分析</h1>
+                    <p>查看识别记录统计、分析数据趋势、导出报表</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('query')">
+                🔍 分类数据查询
+            </button>
+            <button class="tab-btn" onclick="switchTab('stats')">
+                📈 数据统计分析
+            </button>
+            <button class="tab-btn" onclick="switchTab('export')">
+                📥 数据导出
+            </button>
+        </div>
+
+        <!-- 分类数据查询 -->
+        <div id="query-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-title">
+                    🔍 查询条件
+                </div>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>开始时间</label>
+                        <input type="date" id="query-start-date" />
+                    </div>
+                    <div class="filter-group">
+                        <label>结束时间</label>
+                        <input type="date" id="query-end-date" />
+                    </div>
+                    <div class="filter-group">
+                        <label>垃圾分类</label>
+                        <select id="query-category">
+                            <option value="all">全部分类</option>
+                            <option value="可回收物">可回收物</option>
+                            <option value="厨余垃圾">厨余垃圾</option>
+                            <option value="有害垃圾">有害垃圾</option>
+                            <option value="其他垃圾">其他垃圾</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>识别结果</label>
+                        <select id="query-correct">
+                            <option value="all">全部结果</option>
+                            <option value="correct">正确识别</option>
+                            <option value="wrong">错误识别</option>
+                            <option value="unknown">待确认</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="justify-content: flex-end;">
+                        <button class="btn btn-primary" onclick="queryRecords()">
+                            🔍 查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    📋 查询结果
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>垃圾名称</th>
+                                <th>预测分类</th>
+                                <th>实际分类</th>
+                                <th>置信度</th>
+                                <th>识别结果</th>
+                                <th>识别时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="loading">
+                                        <div class="loading-spinner"></div>
+                                        <p>加载中...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="query-prev-btn" onclick="queryPrevPage()" disabled>上一页</button>
+                    <span class="page-info" id="query-page-info">第 1 页</span>
+                    <button id="query-next-btn" onclick="queryNextPage()">下一页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据统计分析 -->
+        <div id="stats-tab" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="value" id="total-records">0</div>
+                    <div class="label">总识别量</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-icon">✅</div>
+                    <div class="value" id="correct-count">0</div>
+                    <div class="label">正确识别</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="value" id="accuracy-rate">0%</div>
+                    <div class="label">识别准确率</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="stat-icon">📈</div>
+                    <div class="value" id="avg-confidence">0%</div>
+                    <div class="label">平均置信度</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    📅 时间范围选择
+                </div>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>开始时间</label>
+                        <input type="date" id="stats-start-date" />
+                    </div>
+                    <div class="filter-group">
+                        <label>结束时间</label>
+                        <input type="date" id="stats-end-date" />
+                    </div>
+                    <div class="filter-group" style="justify-content: flex-end;">
+                        <button class="btn btn-primary" onclick="refreshStats()">
+                            🔄 刷新数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="card">
+                    <div class="card-title">
+                        📊 分类识别量统计
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">
+                        🥧 分类占比分布
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    ⚠️ 常见误分类统计
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>垃圾名称</th>
+                                <th>预测分类</th>
+                                <th>实际分类</th>
+                                <th>误分类次数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="misclassification-table">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="emoji">📊</div>
+                                        <p>暂无数据</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据导出 -->
+        <div id="export-tab" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    📥 导出设置
+                </div>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label>开始时间</label>
+                        <input type="date" id="export-start-date" />
+                    </div>
+                    <div class="filter-group">
+                        <label>结束时间</label>
+                        <input type="date" id="export-end-date" />
+                    </div>
+                    <div class="filter-group">
+                        <label>导出格式</label>
+                        <select id="export-format">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="export-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-id" checked />
+                        <label for="field-id">ID</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-garbage-name" checked />
+                        <label for="field-garbage-name">垃圾名称</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-predicted-category" checked />
+                        <label for="field-predicted-category">预测分类</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-actual-category" checked />
+                        <label for="field-actual-category">实际分类</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-confidence" checked />
+                        <label for="field-confidence">置信度</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-is-correct" checked />
+                        <label for="field-is-correct">识别结果</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="field-created-at" checked />
+                        <label for="field-created-at">识别时间</label>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 12px;">
+                    <button class="btn btn-cta" onclick="exportData()">
+                        📥 导出数据
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetExportForm()">
+                        🔄 重置
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    📋 导出预览
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>垃圾名称</th>
+                                <th>预测分类</th>
+                                <th>实际分类</th>
+                                <th>置信度</th>
+                                <th>识别结果</th>
+                                <th>识别时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <div class="emoji">📄</div>
+                                        <p>请设置条件后点击"导出数据"预览</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let categoryChart = null;
+        let pieChart = null;
+        let queryPage = 1;
+        const pageSize = 10;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            initDateInputs();
+            loadStats();
+            queryRecords();
+        });
+
+        function initDateInputs() {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const formatDate = (date) => date.toISOString().split('T')[0];
+
+            document.getElementById('query-start-date').value = formatDate(thirtyDaysAgo);
+            document.getElementById('query-end-date').value = formatDate(today);
+            document.getElementById('stats-start-date').value = formatDate(thirtyDaysAgo);
+            document.getElementById('stats-end-date').value = formatDate(today);
+            document.getElementById('export-start-date').value = formatDate(thirtyDaysAgo);
+            document.getElementById('export-end-date').value = formatDate(today);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function initCharts() {
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['可回收物', '厨余垃圾', '有害垃圾', '其他垃圾'],
+                    datasets: [{
+                        label: '识别数量',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(22, 163, 74, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(8, 145, 178, 0.8)',
+                            'rgba(59, 130, 246, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(22, 163, 74)',
+                            'rgb(34, 197, 94)',
+                            'rgb(8, 145, 178)',
+                            'rgb(59, 130, 246)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['可回收物', '厨余垃圾', '有害垃圾', '其他垃圾'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(22, 163, 74, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(8, 145, 178, 0.8)',
+                            'rgba(59, 130, 246, 0.8)'
+                        ],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadStats() {
+            try {
+                const startDate = document.getElementById('stats-start-date').value;
+                const endDate = document.getElementById('stats-end-date').value;
+                
+                const params = new URLSearchParams();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                
+                const response = await fetch(`/api/analytics/stats?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('total-records').textContent = data.stats.total_records || 0;
+                    document.getElementById('correct-count').textContent = data.stats.correct_count || 0;
+                    document.getElementById('accuracy-rate').textContent = (data.stats.accuracy_rate || 0) + '%';
+                    document.getElementById('avg-confidence').textContent = (data.stats.avg_confidence || 0) + '%';
+                    
+                    const categoryData = {};
+                    if (data.stats.category_stats) {
+                        data.stats.category_stats.forEach(item => {
+                            categoryData[item.category] = item.count;
+                        });
+                    }
+                    
+                    if (categoryChart) {
+                        categoryChart.data.datasets[0].data = [
+                            categoryData['可回收物'] || 0,
+                            categoryData['厨余垃圾'] || 0,
+                            categoryData['有害垃圾'] || 0,
+                            categoryData['其他垃圾'] || 0
+                        ];
+                        categoryChart.update();
+                    }
+                    
+                    if (pieChart) {
+                        pieChart.data.datasets[0].data = [
+                            categoryData['可回收物'] || 0,
+                            categoryData['厨余垃圾'] || 0,
+                            categoryData['有害垃圾'] || 0,
+                            categoryData['其他垃圾'] || 0
+                        ];
+                        pieChart.update();
+                    }
+                    
+                    if (data.misclassifications && data.misclassifications.length > 0) {
+                        renderMisclassifications(data.misclassifications);
+                    } else {
+                        const tbody = document.getElementById('misclassification-table');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="emoji">✅</div>
+                                        <p>暂无错误分类数据</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+                showToast('加载统计数据失败', 'error');
+            }
+        }
+
+        function renderMisclassifications(data) {
+            const tbody = document.getElementById('misclassification-table');
+            tbody.innerHTML = '';
+            
+            data.forEach((item, index) => {
+                const rank = index + 1;
+                let rankClass = 'rank-other';
+                if (rank === 1) rankClass = 'rank-1';
+                else if (rank === 2) rankClass = 'rank-2';
+                else if (rank === 3) rankClass = 'rank-3';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                    <td>${item.garbage_name}</td>
+                    <td><span class="badge badge-danger">${item.predicted_category}</span></td>
+                    <td><span class="badge badge-success">${item.actual_category}</span></td>
+                    <td><strong>${item.count}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function refreshStats() {
+            loadStats();
+            showToast('数据已刷新', 'success');
+        }
+
+        async function queryRecords() {
+            try {
+                const startDate = document.getElementById('query-start-date').value;
+                const endDate = document.getElementById('query-end-date').value;
+                const category = document.getElementById('query-category').value;
+                const correct = document.getElementById('query-correct').value;
+                
+                const params = new URLSearchParams();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                if (category !== 'all') params.append('category', category);
+                if (correct !== 'all') params.append('is_correct', correct);
+                params.append('page', queryPage);
+                params.append('per_page', pageSize);
+                
+                const response = await fetch(`/api/analytics/records?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderQueryResults(data.records);
+                    const totalPages = Math.ceil(data.total / data.page_size);
+                    updatePagination(data.total, data.page, totalPages);
+                }
+            } catch (error) {
+                console.error('查询记录失败:', error);
+                showToast('查询记录失败', 'error');
+            }
+        }
+
+        function renderQueryResults(records) {
+            const tbody = document.querySelector('#query-tab table tbody');
+            tbody.innerHTML = '';
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <div class="emoji">📭</div>
+                                <p>暂无符合条件的记录</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            records.forEach(record => {
+                let resultBadge = '';
+                if (record.is_correct === true) {
+                    resultBadge = '<span class="badge badge-success">正确</span>';
+                } else if (record.is_correct === false) {
+                    resultBadge = '<span class="badge badge-danger">错误</span>';
+                } else {
+                    resultBadge = '<span class="badge badge-warning">待确认</span>';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${record.id}</td>
+                    <td>${record.garbage_name}</td>
+                    <td>${record.predicted_category}</td>
+                    <td>${record.actual_category || '-'}</td>
+                    <td>${record.confidence}%</td>
+                    <td>${resultBadge}</td>
+                    <td>${record.created_at}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updatePagination(total, currentPage, totalPages) {
+            document.getElementById('query-page-info').textContent = `第 ${currentPage} / ${totalPages} 页 (共 ${total} 条)`;
+            document.getElementById('query-prev-btn').disabled = currentPage <= 1;
+            document.getElementById('query-next-btn').disabled = currentPage >= totalPages;
+        }
+
+        function queryPrevPage() {
+            if (queryPage > 1) {
+                queryPage--;
+                queryRecords();
+            }
+        }
+
+        function queryNextPage() {
+            queryPage++;
+            queryRecords();
+        }
+
+        async function exportData() {
+            try {
+                const startDate = document.getElementById('export-start-date').value;
+                const endDate = document.getElementById('export-end-date').value;
+                const format = document.getElementById('export-format').value;
+                
+                const fields = [];
+                if (document.getElementById('field-id').checked) fields.push('id');
+                if (document.getElementById('field-garbage-name').checked) fields.push('garbage_name');
+                if (document.getElementById('field-predicted-category').checked) fields.push('predicted_category');
+                if (document.getElementById('field-actual-category').checked) fields.push('actual_category');
+                if (document.getElementById('field-confidence').checked) fields.push('confidence');
+                if (document.getElementById('field-is-correct').checked) fields.push('is_correct');
+                if (document.getElementById('field-created-at').checked) fields.push('created_at');
+                
+                if (fields.length === 0) {
+                    showToast('请至少选择一个导出字段', 'warning');
+                    return;
+                }
+                
+                const params = new URLSearchParams();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                params.append('format', format);
+                params.append('fields', fields.join(','));
+                
+                const response = await fetch(`/api/analytics/export?${params.toString()}`);
+                
+                if (format === 'json') {
+                    const data = await response.json();
+                    if (data.success) {
+                        downloadFile(JSON.stringify(data.data, null, 2), 'analytics_export.json', 'application/json');
+                        showToast('导出成功', 'success');
+                    }
+                } else {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `analytics_export.${format === 'excel' ? 'xlsx' : format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    showToast('导出成功', 'success');
+                }
+            } catch (error) {
+                console.error('导出数据失败:', error);
+                showToast('导出数据失败', 'error');
+            }
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+
+        function resetExportForm() {
+            document.querySelectorAll('#export-tab input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            document.getElementById('export-format').value = 'csv';
+            showToast('已重置', 'success');
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

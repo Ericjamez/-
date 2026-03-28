@@ -561,17 +561,12 @@
             {% if 'user_id' in session %}
             <li>
                 <a href="{{ url_for('auth.recognition') }}">
-                    <span>🔍</span> AI识别
+                    <span>🔍</span> 图片识别
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('auth.knowledge') }}">
                     <span>🧠</span> 知识图谱
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.analytics') }}">
-                    <span>📊</span> 性能统计
                 </a>
             </li>
             <li>
@@ -637,8 +632,8 @@
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">🔍</div>
-                <h3>AI智能识别</h3>
-                <p>上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达95%以上。</p>
+                <h3>智能图片识别</h3>
+                <p>上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达80%以上。</p>
                 {% if 'user_id' in session %}
                 <a href="{{ url_for('auth.recognition') }}" class="feature-link">立即体验</a>
                 {% endif %}
@@ -650,15 +645,6 @@
                 <p>构建垃圾分类知识图谱，提供详细的分类标准和处理方法。支持按类别、地区等维度查询，助力垃圾分类知识普及。</p>
                 {% if 'user_id' in session %}
                 <a href="{{ url_for('auth.knowledge') }}" class="feature-link">探索知识</a>
-                {% endif %}
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>性能统计</h3>
-                <p>实时统计识别数据，分析模型性能。提供识别量趋势、分类分布、高频误分类等多维度数据分析，持续优化模型。</p>
-                {% if 'user_id' in session %}
-                <a href="{{ url_for('auth.analytics') }}" class="feature-link">查看统计</a>
                 {% endif %}
             </div>
             
@@ -703,7 +689,7 @@
             <div class="usage-step">
                 <div class="step-number">2</div>
                 <h3 class="step-title">上传图片</h3>
-                <p class="step-description">在AI识别页面上传垃圾图片，或直接拍照。</p>
+                <p class="step-description">在图片识别页面上传垃圾图片，或直接拍照。</p>
             </div>
             
             <div class="usage-step">
@@ -740,9 +726,8 @@
                 <ul class="footer-links">
                     <li><a href="{{ url_for('auth.index') }}">首页</a></li>
                     {% if 'user_id' in session %}
-                    <li><a href="{{ url_for('auth.recognition') }}">AI识别</a></li>
+                    <li><a href="{{ url_for('auth.recognition') }}">图片识别</a></li>
                     <li><a href="{{ url_for('auth.knowledge') }}">知识图谱</a></li>
-                    <li><a href="{{ url_for('auth.analytics') }}">性能统计</a></li>
                     {% else %}
                     <li><a href="{{ url_for('auth.login') }}">登录</a></li>
                     <li><a href="{{ url_for('auth.register') }}">注册</a></li>

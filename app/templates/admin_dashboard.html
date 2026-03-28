@@ -4,23 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员中心 - 垃圾图片分类系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 全局样式重置 */
+        :root {
+            --primary: #16A34A;
+            --primary-light: #22C55E;
+            --primary-lighter: #86EFAC;
+            --primary-dark: #15803D;
+            --primary-darker: #166534;
+            --accent: #0891B2;
+            --accent-light: #22D3EE;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --bg-main: #F0FDF4;
+            --bg-card: #FFFFFF;
+            --bg-hover: #DCFCE7;
+            --bg-muted: #ECFDF5;
+            --text-primary: #14532D;
+            --text-secondary: #166534;
+            --text-muted: #6B7280;
+            --border: #D1FAE5;
+            --border-light: #BBF7D0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --transition: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        /* 页面基础样式 */
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #f0f2f5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-main);
             min-height: 100vh;
             overflow-x: hidden;
+            color: var(--text-primary);
         }
         
-        /* 导航栏样式 - 现代简约 */
         .navbar {
             background: white;
             padding: 12px 0;
@@ -101,308 +133,476 @@
             background: #f8d7da;
         }
         
-        /* 主内容区域 */
-        .admin-content {
-            padding: 40px 0;
-            background: #f8f9fa;
+        .main-content {
+            padding: 32px 0;
+            min-height: calc(100vh - 60px);
         }
         
-        /* 主内容容器 */
-        .admin-content-container {
+        .content-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 24px;
         }
         
-        /* 管理员面板 */
-        .admin-panel {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            padding: 32px;
-            margin-bottom: 30px;
+        .page-header {
+            margin-bottom: 24px;
+            animation: fadeInDown 0.4s ease-out;
         }
-        
-        /* 面板头部 */
-        .panel-header {
-            text-align: center;
-            margin-bottom: 30px;
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        .panel-header .logo-emoji {
-            font-size: 56px;
-            margin-bottom: 16px;
-            display: block;
+
+        .page-header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
-        
-        .panel-header h1 {
-            font-size: 32px;
-            color: #2c3e50;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-        
-        .panel-header .subtitle {
-            font-size: 16px;
-            color: #7f8c8d;
-            margin: 0;
-        }
-        
-        /* 管理员信息卡片 */
-        .admin-info-card {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+
+        .page-header-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(52,152,219,0.2);
+            font-size: 24px;
+        }
+
+        .page-header-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .page-header-text p {
+            color: var(--text-muted);
+            font-size: 14px;
         }
         
-        .admin-info-card p {
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .stat-card.success::before {
+            background: var(--success);
+        }
+
+        .stat-card.warning::before {
+            background: var(--warning);
+        }
+
+        .stat-card.info::before {
+            background: var(--info);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-lighter);
+        }
+
+        .stat-card .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 12px;
-            font-size: 16px;
-        }
-        
-        .admin-info-card strong {
-            font-weight: 600;
-        }
-        
-        /* 模块标题 */
-        .module-title {
+            background: var(--bg-hover);
             font-size: 20px;
-            color: #2c3e50;
-            margin-bottom: 20px;
+        }
+
+        .stat-card.success .stat-icon {
+            background: #D1FAE5;
+        }
+
+        .stat-card.warning .stat-icon {
+            background: #FEF3C7;
+        }
+
+        .stat-card.info .stat-icon {
+            background: #DBEAFE;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            transition: box-shadow var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-title {
+            font-size: 16px;
             font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
         
-        /* 用户管理表格 */
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-        
-        .user-table th,
-        .user-table td {
-            padding: 14px 18px;
-            text-align: left;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .user-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #495057;
-            font-size: 14px;
-        }
-        
-        .user-table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        /* 状态标签 */
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-badge.active {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.locked {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        /* 功能说明卡片 */
-        .features-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
+        .admin-info-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border-radius: var(--radius-lg);
             padding: 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
         }
-        
-        .features-card h3 {
-            font-size: 18px;
-            color: #2c3e50;
-            margin-bottom: 16px;
-            font-weight: 600;
+
+        .admin-info-card .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .admin-info-card .info-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .admin-info-card .info-item .icon {
+            font-size: 20px;
+        }
+
+        .admin-info-card .info-item .text {
+            font-size: 14px;
+        }
+
+        .admin-info-card .info-item .text strong {
+            font-weight: 600;
         }
         
-        .features-list {
-            list-style: none;
-            padding: 0;
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--bg-muted);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
         }
         
-        .features-list li {
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-success {
+            background: var(--bg-hover);
+            color: var(--primary-dark);
+        }
+
+        .badge-danger {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-muted);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+        }
+
+        .feature-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .feature-item .icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .feature-item .text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .emoji {
+            font-size: 48px;
             margin-bottom: 12px;
-            padding-left: 24px;
-            position: relative;
-            color: #495057;
+            opacity: 0.6;
         }
-        
-        .features-list li::before {
-            content: '🎯';
-            position: absolute;
-            left: 0;
+
+        .empty-state p {
             font-size: 14px;
         }
         
-        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (max-width: 768px) {
-            .admin-navbar-container {
+            .navbar-container {
                 flex-direction: column;
                 gap: 12px;
                 padding: 0 16px;
             }
             
-            .admin-navbar-menu {
+            .navbar-menu {
                 justify-content: center;
             }
             
-            .admin-content-container {
+            .content-container {
                 padding: 0 16px;
             }
             
-            .admin-panel {
-                padding: 24px 16px;
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
             
-            .panel-header h1 {
-                font-size: 24px;
+            .admin-info-card .info-grid {
+                grid-template-columns: 1fr;
             }
             
-            .user-table th,
-            .user-table td {
-                padding: 10px 12px;
-                font-size: 14px;
+            .features-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-<!-- 导航栏 -->
-<nav class="navbar">
-    <div class="navbar-container">
-        <a href="{{ url_for('auth.admin_dashboard') }}" class="navbar-brand">
-            <span>🗑️</span>
-            <span>垃圾图片分类系统</span>
-        </a>
-        <ul class="navbar-menu">
-            <li>
-                <a href="{{ url_for('auth.admin_dashboard') }}">
-                    <span>🏠</span> 管理首页
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.admin_dashboard') }}">
-                    <span>👥</span> 用户管理
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.feedback') }}">
-                    <span>📝</span> 反馈学习
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.logout') }}" class="logout-btn">
-                    <span>🚪</span> 退出
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('auth.admin_dashboard') }}" class="navbar-brand">
+                <span>🗑️</span>
+                <span>垃圾图片分类系统</span>
+            </a>
+            <ul class="navbar-menu">
+                <li>
+                    <a href="{{ url_for('auth.admin_dashboard') }}">
+                        <span>🏠</span> 管理首页
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.user_management') }}">
+                        <span>👥</span> 用户管理
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.feedback') }}">
+                        <span>📝</span> 反馈学习
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.admin_analytics') }}">
+                        <span>📊</span> 数据统计
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+                        <span>🚪</span> 退出
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-<!-- 主内容区域 -->
-<div class="admin-content">
-    <div class="admin-content-container">
-        <div class="admin-panel">
-            <div class="panel-header">
-                <div class="logo-emoji">🛡️</div>
-                <h1>管理员中心</h1>
-                <p class="subtitle">系统管理 · 专业操作</p>
+    <div class="main-content">
+        <div class="content-container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div class="page-header-icon">🛡️</div>
+                    <div class="page-header-text">
+                        <h1>管理员中心</h1>
+                        <p>系统管理与数据概览</p>
+                    </div>
+                </div>
             </div>
-            
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="value">{{ users|length }}</div>
+                    <div class="label">用户总数</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="stat-icon">✅</div>
+                    <div class="value">{{ active_count }}</div>
+                    <div class="label">正常用户</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-icon">🔒</div>
+                    <div class="value">{{ locked_count }}</div>
+                    <div class="label">锁定用户</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="stat-icon">📅</div>
+                    <div class="value">{{ admin.created_at.strftime('%m-%d') }}</div>
+                    <div class="label">注册日期</div>
+                </div>
+            </div>
+
             <div class="admin-info-card">
-                <p><strong>👨‍💼 管理员：</strong>{{ admin.username }}</p>
-                <p><strong>📅 注册时间：</strong>{{ admin.created_at.strftime('%Y年%m月%d日 %H:%M') }}</p>
-                <p><strong>👥 用户总数：</strong>{{ users|length }} 人</p>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="icon">👨‍💼</span>
+                        <span class="text"><strong>管理员：</strong>{{ admin.username }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">📅</span>
+                        <span class="text"><strong>注册时间：</strong>{{ admin.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="icon">👥</span>
+                        <span class="text"><strong>用户总数：</strong>{{ users|length }} 人</span>
+                    </div>
+                </div>
             </div>
-            
-            <div style="margin-top: 25px;">
-                <h2 class="module-title">
-                    <span>📊</span> 用户管理
-                </h2>
-                
+
+            <div class="card">
+                <div class="card-title">
+                    <span>📊</span> 用户列表
+                </div>
                 {% if users %}
-                    <table class="user-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>👤 用户名</th>
-                                <th>📱 手机号</th>
-                                <th>📧 邮箱</th>
-                                <th>📅 注册时间</th>
-                                <th>📊 状态</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for user in users %}
-                            <tr>
-                                <td>{{ user.id }}</td>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.phone or '-' }}</td>
-                                <td>{{ user.email or '-' }}</td>
-                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
-                                <td>
-                                    {% if user.is_locked() %}
-                                        <span class="status-badge locked">🔒 已锁定</span>
-                                    {% else %}
-                                        <span class="status-badge active">✅ 正常</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>手机号</th>
+                                    <th>邮箱</th>
+                                    <th>注册时间</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.phone or '-' }}</td>
+                                    <td>{{ user.email or '-' }}</td>
+                                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if user.is_locked() %}
+                                            <span class="badge badge-danger">🔒 已锁定</span>
+                                        {% else %}
+                                            <span class="badge badge-success">✅ 正常</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% else %}
-                    <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px; border: 2px dashed #e0e0e0;">
-                        <p style="color: #999; font-size: 16px;">
-                            📭 暂无用户数据
-                        </p>
+                    <div class="empty-state">
+                        <div class="emoji">📭</div>
+                        <p>暂无用户数据</p>
                     </div>
                 {% endif %}
             </div>
-            
-            <div class="features-card">
-                <h3>
-                    <span>🛠️</span> 管理员功能说明
-                </h3>
-                <ul class="features-list">
-                    <li>👥 查看所有注册用户信息</li>
-                    <li>🔒 用户状态管理（锁定/解锁）</li>
-                    <li>⚙️ 系统配置管理</li>
-                    <li>👨‍💼 管理员账号管理（需在数据库中操作）</li>
-                    <li>📈 数据统计分析</li>
-                </ul>
-            </div>
+
         </div>
     </div>
-</div>
 </body>
 </html>

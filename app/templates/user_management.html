@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 垃圾图片分类系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #16A34A;
+            --primary-light: #22C55E;
+            --primary-lighter: #86EFAC;
+            --primary-dark: #15803D;
+            --primary-darker: #166534;
+            --accent: #0891B2;
+            --accent-light: #22D3EE;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --bg-main: #F0FDF4;
+            --bg-card: #FFFFFF;
+            --bg-hover: #DCFCE7;
+            --bg-muted: #ECFDF5;
+            --text-primary: #14532D;
+            --text-secondary: #166534;
+            --text-muted: #6B7280;
+            --border: #D1FAE5;
+            --border-light: #BBF7D0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --transition: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+        
+        .navbar {
+            background: white;
+            padding: 12px 0;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #2E7D32;
+            font-weight: 700;
+        }
+        
+        .navbar-brand span {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+        
+        .navbar-brand:hover span {
+            transform: rotate(5deg) scale(1.1);
+        }
+        
+        .navbar-menu {
+            list-style: none;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .navbar-menu li a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .navbar-menu li a:hover {
+            background: #f0f7f0;
+            color: #2E7D32;
+            transform: translateY(-1px);
+        }
+        
+        .navbar-menu li .logout-btn {
+            color: #dc3545;
+        }
+        
+        .navbar-menu li .logout-btn:hover {
+            background: #f8d7da;
+        }
+        
+        .main-content {
+            padding: 32px 0;
+            min-height: calc(100vh - 60px);
+        }
+        
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        .page-header {
+            margin-bottom: 24px;
+            animation: fadeInDown 0.4s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .page-header-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .page-header-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .page-header-text p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            transition: box-shadow var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-form input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .search-form input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--bg-muted);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        tr:hover td {
+            background: var(--bg-hover);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .action-buttons-cell {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+        }
+
+        .btn-reset {
+            background: #FEF3C7;
+            color: #B45309;
+        }
+
+        .btn-reset:hover {
+            background: #FDE68A;
+        }
+
+        .btn-lock {
+            background: #DBEAFE;
+            color: var(--info);
+        }
+
+        .btn-lock:hover {
+            background: #BFDBFE;
+        }
+
+        .btn-delete {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: #FECACA;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-success {
+            background: var(--bg-hover);
+            color: var(--primary-dark);
+        }
+
+        .badge-danger {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background-color: var(--bg-card);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            animation: slideUp 0.3s ease;
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        
+        .modal-header span {
+            font-size: 24px;
+        }
+        
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .datetime-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .datetime-grid > div {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .datetime-grid label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .datetime-grid input {
+            width: 100%;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            animation: slideInUp 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.success {
+            background: var(--primary);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar-container {
+                flex-direction: column;
+                gap: 12px;
+                padding: 0 16px;
+            }
+            
+            .navbar-menu {
+                justify-content: center;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .table-container {
+                padding: 16px;
+            }
+            
+            th, td {
+                padding: 10px;
+                font-size: 12px;
+            }
+            
+            .action-buttons-cell {
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .datetime-grid {
+                flex-direction: column;
+            }
+            
+            .datetime-grid > div {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('auth.admin_dashboard') }}" class="navbar-brand">
+                <span>🗑️</span>
+                <span>垃圾图片分类系统</span>
+            </a>
+            <ul class="navbar-menu">
+                <li><a href="{{ url_for('auth.admin_dashboard') }}"><span>🏠</span> 管理首页</a></li>
+                <li><a href="{{ url_for('auth.user_management') }}"><span>👥</span> 用户管理</a></li>
+                <li><a href="{{ url_for('auth.feedback') }}"><span>📝</span> 反馈学习</a></li>
+                <li><a href="{{ url_for('auth.admin_analytics') }}"><span>📊</span> 数据统计</a></li>
+                <li><a href="{{ url_for('auth.logout') }}" class="logout-btn"><span>🚪</span> 退出</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="main-content">
+        <div class="content-container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div class="page-header-icon">👥</div>
+                    <div class="page-header-text">
+                        <h1>用户管理</h1>
+                        <p>管理系统用户账户与权限</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span>🔍</span> 搜索与操作
+                </div>
+                <form class="search-form" onsubmit="searchUsers(event)">
+                    <input type="text" id="search-input" placeholder="请输入用户名或邮箱..." />
+                    <button type="submit" class="btn btn-primary">🔍 查询</button>
+                </form>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="openCreateModal()">➕ 新建用户</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span>📋</span> 用户列表
+                </div>
+                <div class="table-container">
+                    <table id="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>邮箱</th>
+                                <th>注册时间</th>
+                                <th>更新时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body">
+                            <tr>
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <div class="emoji">⏳</div>
+                                        <p>加载中...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="create-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>👤</span>
+                <h3>新建用户</h3>
+            </div>
+            <form onsubmit="createUser(event)">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="create-username" required />
+                </div>
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="create-email" required />
+                </div>
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="text" id="create-phone" />
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="create-password" required />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="lock-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>🔒</span>
+                <h3>锁定用户</h3>
+            </div>
+            <form onsubmit="confirmLock(event)">
+                <div class="form-group">
+                    <label>锁定到期时间</label>
+                    <div class="datetime-grid">
+                        <div>
+                            <label>年</label>
+                            <input type="number" id="lock-year" min="2024" max="2100" required />
+                        </div>
+                        <div>
+                            <label>月</label>
+                            <input type="number" id="lock-month" min="1" max="12" required />
+                        </div>
+                        <div>
+                            <label>日</label>
+                            <input type="number" id="lock-day" min="1" max="31" required />
+                        </div>
+                    </div>
+                    <div class="datetime-grid" style="margin-top: 12px;">
+                        <div>
+                            <label>时</label>
+                            <input type="number" id="lock-hour" min="0" max="23" required />
+                        </div>
+                        <div>
+                            <label>分</label>
+                            <input type="number" id="lock-minute" min="0" max="59" required />
+                        </div>
+                        <div>
+                            <label>秒</label>
+                            <input type="number" id="lock-second" min="0" max="59" required />
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="lock-user-id" />
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeLockModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">确认锁定</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+        });
+        
+        function loadUsers() {
+            fetch('/api/users')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateUserTable(data.users);
+                    } else {
+                        console.error('加载用户列表失败:', data.message);
+                        showToast('加载用户列表失败', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('加载用户列表失败:', error);
+                    showToast('加载用户列表失败', 'error');
+                });
+        }
+        
+        function updateUserTable(users) {
+            const tableBody = document.getElementById('user-table-body');
+            tableBody.innerHTML = '';
+            
+            if (users.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <div class="emoji">📭</div>
+                            <p>暂无用户数据</p>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            } else {
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    let userStatus = '<span class="badge badge-success">✅ 正常</span>';
+                    let isCurrentlyLocked = false;
+                    
+                    if (user.locked_until) {
+                        const lockedTime = new Date(user.locked_until + 'Z');
+                        const now = new Date();
+                        
+                        if (lockedTime > now) {
+                            userStatus = '<span class="badge badge-danger">🔒 锁定中</span>';
+                            isCurrentlyLocked = true;
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${user.created_at}</td>
+                        <td>${user.updated_at}</td>
+                        <td>${userStatus}</td>
+                        <td class="action-buttons-cell">
+                            <button class="btn-small btn-reset" onclick="resetPassword(${user.id})">重置密码</button>
+                            <button class="btn-small btn-lock" onclick="lockUser(${user.id})">${isCurrentlyLocked ? '解锁' : '锁定'}</button>
+                            <button class="btn-small btn-delete" onclick="deleteUser(${user.id})">删除</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+        }
+        
+        function searchUsers(event) {
+            event.preventDefault();
+            const searchTerm = document.getElementById('search-input').value.trim();
+            
+            fetch(`/api/users/search?term=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateUserTable(data.users);
+                    } else {
+                        console.error('查询用户失败:', data.message);
+                        showToast('查询用户失败', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('查询用户失败:', error);
+                    showToast('查询用户失败', 'error');
+                });
+        }
+        
+        function openCreateModal() {
+            document.getElementById('create-modal').style.display = 'block';
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('create-modal').style.display = 'none';
+            document.getElementById('create-username').value = '';
+            document.getElementById('create-email').value = '';
+            document.getElementById('create-phone').value = '';
+            document.getElementById('create-password').value = '';
+        }
+        
+        function createUser(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('create-username').value;
+            const email = document.getElementById('create-email').value;
+            const phone = document.getElementById('create-phone').value;
+            const password = document.getElementById('create-password').value;
+            
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    phone: phone,
+                    password: password
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('用户创建成功', 'success');
+                        closeCreateModal();
+                        loadUsers();
+                    } else {
+                        showToast('创建失败：' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('创建用户失败:', error);
+                    showToast('创建用户失败', 'error');
+                });
+        }
+        
+        function lockUser(userId) {
+            document.getElementById('lock-user-id').value = userId;
+            
+            const now = new Date();
+            now.setHours(now.getHours() + 24);
+            
+            document.getElementById('lock-year').value = now.getFullYear();
+            document.getElementById('lock-month').value = now.getMonth() + 1;
+            document.getElementById('lock-day').value = now.getDate();
+            document.getElementById('lock-hour').value = now.getHours();
+            document.getElementById('lock-minute').value = now.getMinutes();
+            document.getElementById('lock-second').value = now.getSeconds();
+            
+            document.getElementById('lock-modal').style.display = 'block';
+        }
+        
+        function closeLockModal() {
+            document.getElementById('lock-modal').style.display = 'none';
+        }
+        
+        function confirmLock(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('lock-user-id').value;
+            const year = document.getElementById('lock-year').value;
+            const month = document.getElementById('lock-month').value;
+            const day = document.getElementById('lock-day').value;
+            const hour = document.getElementById('lock-hour').value;
+            const minute = document.getElementById('lock-minute').value;
+            const second = document.getElementById('lock-second').value;
+            
+            const lockedUntil = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
+            
+            fetch(`/api/users/lock/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    lock_until: lockedUntil
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('用户已锁定', 'success');
+                        closeLockModal();
+                        loadUsers();
+                    } else {
+                        showToast('锁定失败：' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('锁定用户失败:', error);
+                    showToast('锁定用户失败', 'error');
+                });
+        }
+        
+        function resetPassword(userId) {
+            if (confirm('确定要重置该用户的密码吗？')) {
+                fetch(`/api/users/reset-password/${userId}`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('密码已重置为：' + data.new_password, 'success');
+                        } else {
+                            showToast('重置失败：' + data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('重置密码失败:', error);
+                        showToast('重置密码失败', 'error');
+                    });
+            }
+        }
+        
+        function deleteUser(userId) {
+            if (confirm('确定要删除该用户吗？此操作不可恢复！')) {
+                fetch(`/api/users/delete/${userId}`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('用户已删除', 'success');
+                            loadUsers();
+                        } else {
+                            showToast('删除失败：' + data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('删除用户失败:', error);
+                        showToast('删除用户失败', 'error');
+                    });
+            }
+        }
+
+        function showToast(message, type) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

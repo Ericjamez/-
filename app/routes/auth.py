@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from email_validator import validate_email, EmailNotValidError
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
-from app.models import db, User, VerificationCode
+from app.models import db, User, VerificationCode, Feedback, GarbageCategory, get_china_time
 from app.utils import send_email
 
 auth_bp = Blueprint('auth', __name__)
@@ -204,7 +204,7 @@ def login():
         
         # 检查是否锁定
         if user and user.is_locked():
-            remaining_minutes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60)
+            remaining_minutes = int((user.locked_until - get_china_time()).total_seconds() / 60)
             field_errors['username'].append(f'账号已锁定，请 {remaining_minutes} 分钟后再试')
         # 验证密码
         elif user and user.check_password(password):
@@ -259,7 +259,7 @@ def admin_login():
         
         # 检查是否锁定
         if admin and admin.is_locked():
-            remaining_minutes = int((admin.locked_until - datetime.utcnow()).total_seconds() / 60)
+            remaining_minutes = int((admin.locked_until - get_china_time()).total_seconds() / 60)
             field_errors['username'].append(f'账号已锁定，请 {remaining_minutes} 分钟后再试')
         # 验证密码
         elif admin and admin.check_password(password):
@@ -365,6 +365,9 @@ def index():
     """首页"""
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    # 如果是管理员，重定向到管理员仪表盘
+    if session.get('is_admin'):
+        return redirect(url_for('auth.admin_dashboard'))
     return render_template('index.html')
 
 @auth_bp.route('/dashboard')
@@ -388,12 +391,12 @@ def knowledge():
         return redirect(url_for('auth.login'))
     return render_template('knowledge.html')
 
-@auth_bp.route('/analytics')
-def analytics():
-    """模型性能与统计"""
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-    return render_template('analytics.html')
+@auth_bp.route('/admin_analytics')
+def admin_analytics():
+    """数据统计页面"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('auth.admin_login'))
+    return render_template('admin_analytics.html')
 
 @auth_bp.route('/feedback')
 def feedback():
@@ -417,7 +420,180 @@ def admin_dashboard():
     
     admin = User.query.get(session['user_id'])
     users = User.query.filter_by(is_admin=False).all()
-    return render_template('admin_dashboard.html', admin=admin, users=users)
+    
+    active_count = sum(1 for u in users if not u.is_locked())
+    locked_count = sum(1 for u in users if u.is_locked())
+    
+    return render_template('admin_dashboard.html', admin=admin, users=users, active_count=active_count, locked_count=locked_count)
+
+@auth_bp.route('/admin/user-management')
+def user_management():
+    """用户管理页面"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('auth.admin_login'))
+    return render_template('user_management.html')
+
+# ==================== 用户管理API ====================
+
+@auth_bp.route('/api/users')
+def get_users():
+    """获取用户列表"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    users = User.query.filter_by(is_admin=False).all()
+    user_list = []
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'phone': user.phone,
+            'created_at': user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': user.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'login_attempts': user.login_attempts,
+            'locked_until': user.locked_until.strftime('%Y-%m-%d %H:%M:%S') if user.locked_until else None
+        })
+    
+    return jsonify({'success': True, 'users': user_list})
+
+@auth_bp.route('/api/users/search')
+def search_users():
+    """搜索用户"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    term = request.args.get('term', '').strip()
+    users = User.query.filter(
+        User.is_admin == False,
+        (User.username.ilike(f'%{term}%') | User.email.ilike(f'%{term}%'))
+    ).all()
+    
+    user_list = []
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'phone': user.phone,
+            'created_at': user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': user.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'login_attempts': user.login_attempts,
+            'locked_until': user.locked_until.strftime('%Y-%m-%d %H:%M:%S') if user.locked_until else None
+        })
+    
+    return jsonify({'success': True, 'users': user_list})
+
+@auth_bp.route('/api/users/reset-password/<int:user_id>', methods=['POST'])
+def reset_password(user_id):
+    """重置用户密码"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    user = User.query.get(user_id)
+    if not user or user.is_admin:
+        return jsonify({'success': False, 'message': '用户不存在'})
+    
+    # 重置密码为 user@123456
+    user.set_password('user@123456')
+    user.reset_login_attempts()
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '密码重置成功'})
+
+@auth_bp.route('/api/users/lock/<int:user_id>', methods=['POST'])
+def lock_user(user_id):
+    """锁定/解锁用户"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    user = User.query.get(user_id)
+    if not user or user.is_admin:
+        return jsonify({'success': False, 'message': '用户不存在'})
+    
+    if user.locked_until and user.locked_until > get_china_time():
+        # 解锁用户
+        user.locked_until = None
+        user.login_attempts = 0
+    else:
+        # 锁定用户
+        data = request.get_json(silent=True) or {}
+        lock_until_str = data.get('lock_until')
+        
+        if lock_until_str:
+            # 使用自定义锁定时间
+            try:
+                lock_until = datetime.strptime(lock_until_str, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                return jsonify({'success': False, 'message': '时间格式错误'})
+        else:
+            # 默认锁定 10 分钟
+            lock_until = get_china_time() + timedelta(minutes=10)
+        
+        user.locked_until = lock_until
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': '操作成功'})
+
+@auth_bp.route('/api/users/delete/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    """删除用户"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    user = User.query.get(user_id)
+    if not user or user.is_admin:
+        return jsonify({'success': False, 'message': '用户不存在'})
+    
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'success': True, 'message': '删除成功'})
+
+@auth_bp.route('/api/users/create', methods=['POST'])
+def create_user():
+    """创建用户"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    password = data.get('password', '').strip()
+    
+    # 验证输入
+    if not username or not email or not password:
+        return jsonify({'success': False, 'message': '请填写必要信息'})
+    
+    # 检查用户名是否已存在
+    if User.query.filter_by(username=username).first():
+        return jsonify({'success': False, 'message': '用户名已存在'})
+    
+    # 检查邮箱是否已存在
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'message': '邮箱已存在'})
+    
+    # 检查手机号是否已存在
+    if phone and User.query.filter_by(phone=phone).first():
+        return jsonify({'success': False, 'message': '手机号已存在'})
+    
+    # 验证密码强度
+    is_valid, msg = User.validate_password_strength(password)
+    if not is_valid:
+        return jsonify({'success': False, 'message': msg})
+    
+    # 创建用户
+    new_user = User(
+        username=username,
+        email=email,
+        phone=phone,
+        is_admin=False
+    )
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '用户创建成功'})
 
 @auth_bp.route('/recognize', methods=['POST'])
 def recognize():
@@ -431,6 +607,8 @@ def recognize():
     image = request.files['image']
     if image.filename == '':
         return jsonify({'success': False, 'message': '请选择图片'})
+    
+    record_id = request.form.get('record_id', type=int)
     
     # 保存图片到临时文件
     import os
@@ -448,12 +626,43 @@ def recognize():
         if success:
             # 生成知识内容
             knowledge = generate_knowledge(result)
+            
+            # 获取或创建分类
+            category = GarbageCategory.query.filter_by(name=result).first()
+            if not category:
+                category = GarbageCategory(name=result)
+                db.session.add(category)
+                db.session.flush()
+            
+            from app.models import RecognitionRecord
+            
+            if record_id:
+                record = RecognitionRecord.query.get(record_id)
+                if record and record.feedback_id is None:
+                    record.predicted_category_id = category.id
+                    record.confidence = confidence / 100 if confidence > 1 else confidence
+                    db.session.commit()
+                else:
+                    record = None
+            
+            if not record_id or not record:
+                record = RecognitionRecord(
+                    user_id=session.get('user_id'),
+                    garbage_name='-',
+                    predicted_category_id=category.id,
+                    confidence=confidence / 100 if confidence > 1 else confidence,
+                    is_correct=None
+                )
+                db.session.add(record)
+                db.session.commit()
+            
             return jsonify({
                 'success': True,
                 'result': {
                     'category': result,
                     'confidence': confidence,
-                    'time': round(0.1, 2)  # 模拟识别时间
+                    'time': round(0.1, 2),
+                    'record_id': record.id
                 },
                 'knowledge': knowledge
             })
@@ -474,6 +683,26 @@ def generate_knowledge(category):
     }
     return knowledge_map.get(category, '暂无相关知识')
 
+@auth_bp.route('/confirm-recognition/<int:record_id>', methods=['POST'])
+def confirm_recognition(record_id):
+    """确认识别结果正确（用户未提交错误反馈）"""
+    from app.models import RecognitionRecord
+    record = RecognitionRecord.query.get(record_id)
+    
+    if not record:
+        return jsonify({'success': False, 'message': '识别记录不存在'})
+    
+    if record.feedback_id is not None:
+        return jsonify({'success': False, 'message': '该记录已提交反馈'})
+    
+    if record.is_correct is not None:
+        return jsonify({'success': False, 'message': '该记录已确认'})
+    
+    record.is_correct = True
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '已确认识别结果正确'})
+
 @auth_bp.route('/submit-feedback', methods=['POST'])
 def submit_feedback():
     """提交反馈"""
@@ -482,18 +711,80 @@ def submit_feedback():
     
     real_category = request.form.get('real_category', '').strip()
     note = request.form.get('note', '').strip()
+    garbage_name = request.form.get('garbage_name', '-').strip()
+    wrong_category = request.form.get('wrong_category', '未知分类').strip()
+    confidence = request.form.get('confidence', '0').strip()
+    record_id = request.form.get('record_id', '').strip()
     
     if not real_category:
         return jsonify({'success': False, 'message': '请选择真实的垃圾分类'})
     
     # 处理图片（如果有）
+    image_path = None
     if 'image' in request.files:
         image = request.files['image']
         if image.filename != '':
-            # 这里可以添加保存图片的逻辑
-            pass
+            # 确保保存目录存在
+            import os
+            from werkzeug.utils import secure_filename
+            
+            upload_folder = os.path.join(os.path.dirname(__file__), '..', 'static', 'feedback_images')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            # 生成唯一的文件名
+            filename = secure_filename(image.filename)
+            unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
+            file_path = os.path.join(upload_folder, unique_filename)
+            
+            # 保存图片
+            image.save(file_path)
+            
+            # 存储相对路径到数据库
+            image_path = f'/static/feedback_images/{unique_filename}'
     
-    # 这里可以添加反馈数据的处理逻辑，例如保存到数据库
+    # 从session中获取用户信息
+    user_id = session.get('user_id')
+    
+    # 查找或创建分类
+    def get_or_create_category(name):
+        category = GarbageCategory.query.filter_by(name=name).first()
+        if not category:
+            category = GarbageCategory(name=name)
+            db.session.add(category)
+            db.session.commit()
+        return category
+    
+    # 获取分类对象
+    wrong_category_obj = get_or_create_category(wrong_category)
+    correct_category_obj = get_or_create_category(real_category)
+    
+    # 创建反馈数据
+    feedback = Feedback(
+        user_id=user_id,
+        garbage_name=garbage_name,
+        wrong_category_id=wrong_category_obj.id,
+        correct_category_id=correct_category_obj.id,
+        status='pending',
+        image_path=image_path,
+        note=note,
+        confidence=float(confidence) / 100 if confidence else 0
+    )
+    
+    # 存储反馈数据到数据库
+    db.session.add(feedback)
+    db.session.flush()
+    
+    # 如果有识别记录ID，关联反馈记录（不立即判断is_correct，等待管理员处理）
+    if record_id:
+        from app.models import RecognitionRecord
+        record = RecognitionRecord.query.get(int(record_id))
+        if record:
+            record.garbage_name = garbage_name
+            record.actual_category_id = correct_category_obj.id
+            record.feedback_id = feedback.id
+            record.is_correct = None
+    
+    db.session.commit()
     
     return jsonify({'success': True, 'message': '反馈提交成功，感谢您的帮助！'})
 
@@ -505,9 +796,21 @@ def get_feedback_list():
     if 'user_id' not in session or not session.get('is_admin'):
         return jsonify({'success': False, 'message': '无权限访问'})
     
-    # 实际项目中，这里应该从数据库中获取数据
-    # 目前返回空列表，表示没有反馈数据
+    # 从数据库获取反馈列表
+    feedbacks = Feedback.query.order_by(Feedback.created_at.desc()).all()
+    
+    # 转换为前端需要的格式
     feedback_list = []
+    for feedback in feedbacks:
+        feedback_list.append({
+            'id': feedback.id,
+            'user': feedback.user.username,
+            'time': feedback.created_at.strftime('%Y-%m-%d %H:%M'),
+            'garbageName': feedback.garbage_name,
+            'wrongCategory': feedback.wrong_category.name if feedback.wrong_category else '未知分类',
+            'correctCategory': feedback.correct_category.name if feedback.correct_category else '未知分类',
+            'status': feedback.status
+        })
     
     return jsonify({'success': True, 'data': feedback_list})
 
@@ -517,9 +820,26 @@ def get_feedback_details(id):
     if 'user_id' not in session or not session.get('is_admin'):
         return jsonify({'success': False, 'message': '无权限访问'})
     
-    # 实际项目中，这里应该从数据库中获取数据
-    # 目前返回反馈不存在的错误信息
-    return jsonify({'success': False, 'message': '反馈不存在'})
+    # 从数据库获取反馈详情
+    feedback = Feedback.query.get(id)
+    if not feedback:
+        return jsonify({'success': False, 'message': '反馈不存在'})
+    
+    # 转换为前端需要的格式
+    feedback_data = {
+        'id': feedback.id,
+        'user': feedback.user.username,
+        'time': feedback.created_at.strftime('%Y-%m-%d %H:%M'),
+        'garbageName': feedback.garbage_name,
+        'wrongCategory': feedback.wrong_category.name if feedback.wrong_category else '未知分类',
+        'correctCategory': feedback.correct_category.name if feedback.correct_category else '未知分类',
+        'status': feedback.status,
+        'image': feedback.image_path,
+        'note': feedback.note,
+        'confidence': f"{int(feedback.confidence * 100)}%" if feedback.confidence else '0%'
+    }
+    
+    return jsonify({'success': True, 'data': feedback_data})
 
 @auth_bp.route('/api/feedback/process/<int:id>', methods=['POST'])
 def process_feedback(id):
@@ -531,9 +851,107 @@ def process_feedback(id):
     if status not in ['processed', 'ignored']:
         return jsonify({'success': False, 'message': '无效的状态'})
     
-    # 这里可以添加处理反馈的逻辑，例如更新数据库
+    # 从数据库获取反馈
+    feedback = Feedback.query.get(id)
+    if not feedback:
+        return jsonify({'success': False, 'message': '反馈不存在'})
+    
+    # 如果状态为已处理，且有图片，则复制图片
+    if status == 'processed' and feedback.image_path:
+        import os
+        import shutil
+        
+        # 获取正确分类
+        correct_category = feedback.correct_category.name if feedback.correct_category else '其他垃圾'
+        
+        # 确定目标文件夹
+        category_map = {
+            '厨余垃圾': '1',
+            '可回收物': '2',
+            '有害垃圾': '3',
+            '其他垃圾': '4'
+        }
+        target_folder = category_map.get(correct_category, '4')
+        
+        # 构建目标路径
+        base_path = os.path.dirname(__file__)
+        image_full_path = os.path.join(base_path, '..', feedback.image_path.lstrip('/'))
+        target_dir = os.path.join(base_path, '..', 'dataset', 'train', target_folder)
+        
+        # 确保目标文件夹存在
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # 复制图片
+        if os.path.exists(image_full_path):
+            # 生成新的文件名
+            filename = os.path.basename(image_full_path)
+            new_filename = f"feedback_{feedback.id}_{filename}"
+            target_path = os.path.join(target_dir, new_filename)
+            
+            # 复制文件
+            shutil.copy2(image_full_path, target_path)
+    
+    # 更新反馈状态
+    feedback.status = status
+    
+    # 更新关联的识别记录的is_correct字段
+    from app.models import RecognitionRecord
+    record = RecognitionRecord.query.filter_by(feedback_id=feedback.id).first()
+    if record:
+        if status == 'processed':
+            record.is_correct = False
+        elif status == 'ignored':
+            record.is_correct = True
+    
+    db.session.commit()
     
     return jsonify({'success': True, 'message': f'反馈 {id} 已标记为 {"已处理" if status == "processed" else "已忽略"}'})
+
+@auth_bp.route('/api/feedback/undo/<int:id>', methods=['POST'])
+def undo_process_feedback(id):
+    """撤回标记"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    # 从数据库获取反馈
+    feedback = Feedback.query.get(id)
+    if not feedback:
+        return jsonify({'success': False, 'message': '反馈不存在'})
+    
+    # 如果之前是已处理状态，删除已复制的图片
+    if feedback.status == 'processed' and feedback.image_path:
+        import os
+        
+        correct_category = feedback.correct_category.name if feedback.correct_category else '其他垃圾'
+        
+        category_map = {
+            '厨余垃圾': '1',
+            '可回收物': '2',
+            '有害垃圾': '3',
+            '其他垃圾': '4'
+        }
+        target_folder = category_map.get(correct_category, '4')
+        
+        base_path = os.path.dirname(__file__)
+        filename = os.path.basename(feedback.image_path)
+        new_filename = f"feedback_{feedback.id}_{filename}"
+        target_path = os.path.join(base_path, '..', 'dataset', 'train', target_folder, new_filename)
+        
+        if os.path.exists(target_path):
+            os.remove(target_path)
+    
+    # 将状态改回待处理
+    feedback.status = 'pending'
+    
+    # 重置关联的识别记录的is_correct字段
+    from app.models import RecognitionRecord
+    record = RecognitionRecord.query.filter_by(feedback_id=feedback.id).first()
+    if record:
+        record.is_correct = None
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': f'反馈 {id} 已撤回标记'})
 
 @auth_bp.route('/api/feedback/filter', methods=['POST'])
 def filter_feedback():
@@ -544,9 +962,32 @@ def filter_feedback():
     status = request.form.get('status', 'all').strip()
     category = request.form.get('category', 'all').strip()
     
-    # 实际项目中，这里应该从数据库中获取数据并筛选
-    # 目前返回空列表，表示没有符合条件的反馈数据
+    # 从数据库筛选反馈
+    query = Feedback.query
+    
+    if status != 'all':
+        query = query.filter_by(status=status)
+    
+    if category != 'all':
+        # 查找对应的分类ID
+        category_obj = GarbageCategory.query.filter_by(name=category).first()
+        if category_obj:
+            query = query.filter_by(correct_category_id=category_obj.id)
+    
+    feedbacks = query.order_by(Feedback.created_at.desc()).all()
+    
+    # 转换为前端需要的格式
     filtered_list = []
+    for feedback in feedbacks:
+        filtered_list.append({
+            'id': feedback.id,
+            'user': feedback.user.username,
+            'time': feedback.created_at.strftime('%Y-%m-%d %H:%M'),
+            'garbageName': feedback.garbage_name,
+            'wrongCategory': feedback.wrong_category.name if feedback.wrong_category else '未知分类',
+            'correctCategory': feedback.correct_category.name if feedback.correct_category else '未知分类',
+            'status': feedback.status
+        })
     
     return jsonify({'success': True, 'data': filtered_list})
 
@@ -569,5 +1010,210 @@ def logout():
     session.clear()
     flash('已成功登出', 'success')
     return redirect(url_for('auth.login'))
+
+
+# ==================== 数据统计API ====================
+
+@auth_bp.route('/api/analytics/records')
+def get_analytics_records():
+    """获取识别记录列表（支持分页和筛选）"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    from app.models import RecognitionRecord
+    
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 10, type=int)
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    category = request.args.get('category', '')
+    result = request.args.get('result', '')
+    name = request.args.get('name', '')
+    
+    query = RecognitionRecord.query
+    
+    if start_date:
+        query = query.filter(RecognitionRecord.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(RecognitionRecord.created_at < datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+    if category:
+        category_obj = GarbageCategory.query.filter_by(name=category).first()
+        if category_obj:
+            query = query.filter(RecognitionRecord.predicted_category_id == category_obj.id)
+    if result == 'correct':
+        query = query.filter(RecognitionRecord.is_correct == True)
+    elif result == 'wrong':
+        query = query.filter(RecognitionRecord.is_correct == False)
+    elif result == 'unknown':
+        query = query.filter(RecognitionRecord.is_correct == None)
+    if name:
+        query = query.filter(RecognitionRecord.garbage_name.ilike(f'%{name}%'))
+    
+    total = query.count()
+    records = query.order_by(RecognitionRecord.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    
+    records_list = []
+    for record in records:
+        records_list.append({
+            'id': record.id,
+            'garbage_name': record.garbage_name,
+            'predicted_category': record.predicted_category.name if record.predicted_category else '-',
+            'actual_category': record.actual_category.name if record.actual_category else None,
+            'confidence': record.confidence,
+            'is_correct': record.is_correct,
+            'created_at': record.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+    
+    return jsonify({
+        'success': True,
+        'records': records_list,
+        'total': total,
+        'page': page,
+        'page_size': page_size
+    })
+
+
+@auth_bp.route('/api/analytics/stats')
+def get_analytics_stats():
+    """获取统计数据"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    from app.models import RecognitionRecord
+    from sqlalchemy import func
+    
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    
+    query = RecognitionRecord.query
+    
+    if start_date:
+        query = query.filter(RecognitionRecord.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(RecognitionRecord.created_at < datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+    
+    records = query.all()
+    
+    total_records = len(records)
+    correct_count = sum(1 for r in records if r.is_correct == True)
+    wrong_count = sum(1 for r in records if r.is_correct == False)
+    known_count = correct_count + wrong_count
+    
+    accuracy_rate = round(correct_count / known_count * 100, 1) if known_count > 0 else 0
+    avg_confidence = round(sum(r.confidence for r in records) / total_records * 100, 1) if total_records > 0 else 0
+    
+    category_stats = []
+    categories = GarbageCategory.query.all()
+    for cat in categories:
+        count = sum(1 for r in records if r.predicted_category_id == cat.id)
+        if count > 0:
+            category_stats.append({
+                'category': cat.name,
+                'count': count
+            })
+    
+    misclassifications = []
+    wrong_records = [r for r in records if r.is_correct == False and r.actual_category_id]
+    if wrong_records:
+        from collections import Counter
+        error_counts = Counter()
+        for r in wrong_records:
+            key = (r.garbage_name, r.predicted_category.name, r.actual_category.name)
+            error_counts[key] += 1
+        
+        for (garbage_name, predicted, actual), count in error_counts.most_common(10):
+            misclassifications.append({
+                'garbage_name': garbage_name,
+                'predicted_category': predicted,
+                'actual_category': actual,
+                'count': count
+            })
+    
+    return jsonify({
+        'success': True,
+        'stats': {
+            'total_records': total_records,
+            'correct_count': correct_count,
+            'accuracy_rate': accuracy_rate,
+            'avg_confidence': avg_confidence,
+            'category_stats': category_stats
+        },
+        'misclassifications': misclassifications
+    })
+
+
+@auth_bp.route('/api/analytics/export')
+def export_analytics_data():
+    """导出数据为Excel"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    from app.models import RecognitionRecord
+    import io
+    
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    category = request.args.get('category', '')
+    fields = request.args.get('fields', 'id,garbage_name,predicted_category,actual_category,confidence,is_correct,created_at').split(',')
+    
+    query = RecognitionRecord.query
+    
+    if start_date:
+        query = query.filter(RecognitionRecord.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(RecognitionRecord.created_at < datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+    if category:
+        category_obj = GarbageCategory.query.filter_by(name=category).first()
+        if category_obj:
+            query = query.filter(RecognitionRecord.predicted_category_id == category_obj.id)
+    
+    records = query.order_by(RecognitionRecord.created_at.desc()).all()
+    
+    try:
+        import pandas as pd
+    except ImportError:
+        return jsonify({'success': False, 'message': '请安装pandas库: pip install pandas openpyxl'})
+    
+    data = []
+    for record in records:
+        row = {}
+        if 'id' in fields:
+            row['ID'] = record.id
+        if 'garbage_name' in fields:
+            row['垃圾名称'] = record.garbage_name
+        if 'predicted_category' in fields:
+            row['预测分类'] = record.predicted_category.name if record.predicted_category else '-'
+        if 'actual_category' in fields:
+            row['实际分类'] = record.actual_category.name if record.actual_category else '-'
+        if 'confidence' in fields:
+            row['置信度'] = f"{record.confidence * 100:.1f}%"
+        if 'is_correct' in fields:
+            if record.is_correct == True:
+                row['识别结果'] = '正确'
+            elif record.is_correct == False:
+                row['识别结果'] = '错误'
+            else:
+                row['识别结果'] = '未知'
+        if 'created_at' in fields:
+            row['识别时间'] = record.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        data.append(row)
+    
+    df = pd.DataFrame(data)
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='识别记录')
+    
+    output.seek(0)
+    
+    from flask import send_file
+    filename = f"识别记录_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 
 

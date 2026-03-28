@@ -1,10 +1,16 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
 
 db = SQLAlchemy()
+
+def get_china_time():
+    """获取中国时区当前时间 (UTC+8)"""
+    utc_time = datetime.utcnow()
+    china_time = utc_time + timedelta(hours=8)
+    return china_time
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -17,8 +23,8 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     login_attempts = db.Column(db.Integer, default=0, nullable=False)
     locked_until = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False)
+    updated_at = db.Column(db.DateTime, default=get_china_time, onupdate=get_china_time, nullable=False)
     
     def set_password(self, password):
         """使用 SHA256 加密密码"""
@@ -30,7 +36,7 @@ class User(UserMixin, db.Model):
     
     def is_locked(self):
         """检查账号是否被锁定"""
-        if self.locked_until and self.locked_until > datetime.utcnow():
+        if self.locked_until and self.locked_until > get_china_time():
             return True
         return False
     
@@ -38,7 +44,7 @@ class User(UserMixin, db.Model):
         """增加登录失败次数"""
         self.login_attempts += 1
         if self.login_attempts >= max_attempts:
-            self.locked_until = datetime.utcnow() + timedelta(minutes=lockout_minutes)
+            self.locked_until = get_china_time() + timedelta(minutes=lockout_minutes)
         db.session.commit()
     
     def reset_login_attempts(self):
@@ -69,13 +75,13 @@ class VerificationCode(db.Model):
     contact = db.Column(db.String(120), nullable=False, index=True)  # 手机号或邮箱
     code = db.Column(db.String(10), nullable=False)
     code_type = db.Column(db.String(20), nullable=False)  # register, login, reset_password
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
     
     def is_valid(self):
         """检查验证码是否有效"""
-        return not self.used and self.expires_at > datetime.utcnow()
+        return not self.used and self.expires_at > get_china_time()
     
     def mark_as_used(self):
         """标记验证码为已使用"""
@@ -87,7 +93,7 @@ class VerificationCode(db.Model):
         """生成验证码"""
         import random
         code = str(random.randint(100000, 999999))
-        expires_at = datetime.utcnow() + timedelta(minutes=expire_minutes)
+        expires_at = get_china_time() + timedelta(minutes=expire_minutes)
         
         # 删除该联系人的旧验证码
         VerificationCode.query.filter_by(
@@ -129,8 +135,8 @@ class GarbageCategory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False, index=True)
     description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False)
+    updated_at = db.Column(db.DateTime, default=get_china_time, onupdate=get_china_time, nullable=False)
     
     def __repr__(self):
         return f'<GarbageCategory {self.name}>'
@@ -149,8 +155,8 @@ class Feedback(db.Model):
     image_path = db.Column(db.String(255))
     note = db.Column(db.Text)
     confidence = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=get_china_time, onupdate=get_china_time, nullable=False)
     
     # 关联关系
     user = db.relationship('User', backref=db.backref('feedbacks', lazy=True))
@@ -159,3 +165,27 @@ class Feedback(db.Model):
     
     def __repr__(self):
         return f'<Feedback {self.id} - {self.garbage_name}>'
+
+
+class RecognitionRecord(db.Model):
+    """识别记录模型"""
+    __tablename__ = 'recognition_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    garbage_name = db.Column(db.String(100), nullable=False, index=True)
+    predicted_category_id = db.Column(db.Integer, db.ForeignKey('garbage_categories.id'), nullable=False)
+    actual_category_id = db.Column(db.Integer, db.ForeignKey('garbage_categories.id'), nullable=True)
+    confidence = db.Column(db.Float, nullable=False)
+    is_correct = db.Column(db.Boolean, nullable=True)
+    feedback_id = db.Column(db.Integer, db.ForeignKey('feedbacks.id'), nullable=True, index=True)
+    image_path = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False, index=True)
+    
+    user = db.relationship('User', backref=db.backref('recognition_records', lazy=True))
+    predicted_category = db.relationship('GarbageCategory', foreign_keys=[predicted_category_id], backref=db.backref('predicted_records', lazy=True))
+    actual_category = db.relationship('GarbageCategory', foreign_keys=[actual_category_id], backref=db.backref('actual_records', lazy=True))
+    feedback = db.relationship('Feedback', backref=db.backref('recognition_record', uselist=False))
+    
+    def __repr__(self):
+        return f'<RecognitionRecord {self.id} - {self.garbage_name}>'
