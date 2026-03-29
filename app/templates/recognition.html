@@ -4,23 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片识别交互中心 - 垃圾图片分类系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 全局样式重置 */
+        :root {
+            --primary: #16A34A;
+            --primary-light: #22C55E;
+            --primary-lighter: #86EFAC;
+            --primary-dark: #15803D;
+            --primary-darker: #166534;
+            --accent: #0891B2;
+            --accent-light: #22D3EE;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --bg-main: #F0FDF4;
+            --bg-card: #FFFFFF;
+            --bg-hover: #DCFCE7;
+            --bg-muted: #ECFDF5;
+            --text-primary: #14532D;
+            --text-secondary: #166534;
+            --text-muted: #6B7280;
+            --border: #D1FAE5;
+            --border-light: #BBF7D0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --transition: 200ms ease;
+            --transition-slow: 300ms ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        /* 页面基础样式 */
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #f8f9fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-main);
             min-height: 100vh;
             overflow-x: hidden;
+            color: var(--text-primary);
         }
         
-        /* 导航栏样式 - 现代简约 */
         .navbar {
             background: white;
             padding: 12px 0;
@@ -101,10 +133,9 @@
             background: #f8d7da;
         }
         
-        /* 英雄区域样式 - 简洁现代 */
         .hero {
-            background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-            padding: 15px 0;
+            background: linear-gradient(135deg, var(--bg-muted) 0%, var(--bg-hover) 100%);
+            padding: 40px 0;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -117,7 +148,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="1" fill="%2381C784" opacity="0.1"/></svg>') repeat;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="1" fill="%2316A34A" opacity="0.1"/></svg>') repeat;
             animation: float 20s linear infinite;
         }
         
@@ -136,14 +167,14 @@
         .hero-title {
             font-size: 32px;
             margin-bottom: 16px;
-            color: #2E7D32;
+            color: var(--primary-darker);
             font-weight: 700;
             line-height: 1.2;
         }
         
         .hero-subtitle {
             font-size: 16px;
-            color: #6c757d;
+            color: var(--text-muted);
             margin-bottom: 32px;
             max-width: 700px;
             margin-left: auto;
@@ -151,24 +182,19 @@
             line-height: 1.6;
         }
         
-        /* 主内容区域 - 修复背景图全屏显示 */
         .main-content {
             padding: 60px 0;
-            /* 背景图设置 */
-            background-image: url('static/background/bg1.png');
-            background-position: center center; /* 居中 */
-            background-repeat: no-repeat; /* 不重复 */
-
+            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 50%, #BBF7D0 100%);
+            background-position: center center;
+            background-repeat: no-repeat;
         }
 
         .content-container {
             max-width: 800px;
             margin: 0 auto;
             padding: 0 24px;
-
         }
         
-        /* 表单和组件样式 */
         .form-group {
             margin-bottom: 24px;
             text-align: center;
@@ -177,7 +203,7 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #343a40;
+            color: var(--text-secondary);
             font-weight: 600;
             font-size: 14px;
         }
@@ -191,91 +217,95 @@
         select, input, textarea {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
             font-size: 14px;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
+            background: var(--bg-card);
+            transition: all var(--transition);
+            font-family: inherit;
+            color: var(--text-primary);
         }
         
         select:focus, input:focus, textarea:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: var(--primary-light);
             background: white;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
         }
         
         button {
             padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all var(--transition);
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-family: inherit;
         }
         
         .btn-primary {
-            background: #4CAF50;
+            background: var(--primary);
             color: white;
         }
         
         .btn-primary:hover {
-            background: #43a047;
+            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
         }
         
         .btn-secondary {
             background: white;
-            color: #495057;
-            border: 1px solid #dee2e6;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
         }
         
         .btn-secondary:hover {
-            background: #f8f9fa;
-            border-color: #4CAF50;
+            background: var(--bg-hover);
+            border-color: var(--primary);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         
-        /* 标签页样式 */
         .tabs {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             margin-bottom: 20px;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 8px;
         }
         
         .tab {
-            padding: 8px 16px;
-            border: 1px solid #e9ecef;
-            border-radius: 8px 8px 0 0;
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
+            transition: all var(--transition);
+            background: var(--bg-card);
             font-size: 14px;
             font-weight: 500;
+            color: var(--text-muted);
         }
         
         .tab:hover {
-            border-color: #4CAF50;
-            background: #f0f7f0;
+            border-color: var(--primary);
+            background: var(--bg-hover);
+            color: var(--primary-dark);
         }
         
         .tab.active {
             background: white;
-            color: #2E7D32;
-            border-color: #4CAF50;
-            border-bottom: 1px solid white;
+            color: var(--primary-dark);
+            border-color: var(--primary);
+            border-bottom: 2px solid white;
+            margin-bottom: -1px;
         }
         
-        /* 模式内容 */
         .mode-content {
             display: none;
         }
@@ -284,15 +314,14 @@
             display: block;
         }
         
-        /* 上传区域 */
         .upload-area {
-            border: 2px dashed #e9ecef;
-            border-radius: 12px;
-            padding: 30px;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
+            transition: all var(--transition);
+            background: var(--bg-card);
             min-height: 300px;
             display: flex;
             flex-direction: column;
@@ -301,28 +330,28 @@
         }
         
         .upload-area:hover {
-            border-color: #4CAF50;
-            background: #f0f7f0;
+            border-color: var(--primary);
+            background: var(--bg-hover);
         }
         
         .upload-placeholder {
             font-size: 64px;
-            color: #dee2e6;
+            color: var(--primary-lighter);
             margin-bottom: 16px;
         }
         
         .upload-text {
-            color: #6c757d;
+            color: var(--text-muted);
             font-size: 14px;
             margin-bottom: 8px;
         }
         
         .upload-hint {
-            color: #adb5bd;
+            color: var(--text-muted);
             font-size: 12px;
+            opacity: 0.8;
         }
         
-        /* 预览区域 */
         .preview-area {
             margin-bottom: 24px;
             text-align: center;
@@ -331,12 +360,11 @@
         .preview-image {
             max-width: 100%;
             max-height: 300px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
             margin-bottom: 16px;
         }
         
-        /* 分栏布局样式 */
         .layout-container {
             display: flex;
             flex-direction: column;
@@ -347,7 +375,6 @@
             margin: 24px auto;
         }
         
-        /* 识别后布局 */
         .layout-container.has-result {
             flex-direction: column;
             align-items: center;
@@ -363,121 +390,85 @@
             max-width: 100%;
         }
         
-        /* 操作卡片样式 */
         .operation-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e9ecef;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
             width: 100%;
             max-width: 100%;
         }
         
-        /* 相机样式 */
         .camera-container {
-            border: 2px dashed #e9ecef;
-            border-radius: 12px;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
             padding: 30px;
             text-align: center;
-            background: white;
+            background: var(--bg-card);
             min-height: 280px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 16px;
         }
         
         .camera-preview {
             width: 100%;
             max-width: 100%;
             height: 300px;
-            border-radius: 8px;
+            border-radius: var(--radius);
             margin: 0 auto 24px;
             overflow: hidden;
-            background: #e9ecef;
+            background: var(--bg-muted);
         }
         
-        /* 识别结果卡片样式 */
         .recognition-result {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e9ecef;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
             margin-top: 0;
             width: 100%;
         }
         
-        /* 结果标题样式 */
         .result-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 16px;
             font-weight: 700;
             font-size: 16px;
-            color: #343a40;
+            color: var(--primary-darker);
         }
         
-        /* 垃圾分类结果高亮 */
         .result-value.highlight {
-            color: #2ecc71;
+            color: var(--primary);
             font-weight: bold;
         }
         
-        /* 知识内容样式 */
         .knowledge-content {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 16px;
+            background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-muted) 100%);
+            border-radius: var(--radius);
+            padding: 20px;
             margin-bottom: 24px;
-            border-left: 4px solid #4CAF50;
+            border-left: 4px solid var(--primary);
         }
         
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .layout-container.has-result {
-                flex-direction: column;
-            }
-            
-            .left-section {
-                flex: 1;
-            }
-        }
-        
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        /* 识别结果 */
-        .recognition-result {
-            margin-top: 40px;
-            padding: 32px;
-            border-radius: 12px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .result-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            color: #2E7D32;
-            font-size: 20px;
-            font-weight: 600;
+        .knowledge-content p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 14px;
         }
         
         .result-info {
-            background: white;
-            padding: 24px;
-            border-radius: 8px;
+            background: var(--bg-muted);
+            padding: 20px;
+            border-radius: var(--radius);
             margin-bottom: 24px;
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--border-light);
         }
         
         .result-item {
@@ -485,7 +476,7 @@
             justify-content: space-between;
             margin-bottom: 12px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #f8f9fa;
+            border-bottom: 1px solid var(--border-light);
         }
         
         .result-item:last-child {
@@ -496,37 +487,14 @@
         
         .result-label {
             font-weight: 500;
-            color: #495057;
+            color: var(--text-secondary);
         }
         
         .result-value {
             font-weight: 600;
-            color: #2E7D32;
+            color: var(--primary-dark);
         }
         
-        /* 知识内容 */
-        .knowledge-content {
-            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-            border: 1px solid #e1bee7;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        
-        .knowledge-content h3 {
-            color: #6a1b9a;
-            margin-bottom: 16px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .knowledge-content p {
-            color: #4a148c;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        
-        /* 反馈对话框 */
         .modal {
             position: fixed;
             top: 0;
@@ -541,12 +509,13 @@
         }
         
         .modal-content {
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
             padding: 32px;
             width: 100%;
             max-width: 480px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
             animation: slideUp 0.3s ease-out;
         }
         
@@ -555,7 +524,7 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 24px;
-            color: #2E7D32;
+            color: var(--primary-darker);
             font-size: 20px;
             font-weight: 600;
         }
@@ -570,10 +539,9 @@
             flex: 1;
         }
         
-        /* 成功和错误消息 */
         .alert {
             padding: 16px 20px;
-            border-radius: 8px;
+            border-radius: var(--radius);
             margin-bottom: 24px;
             display: flex;
             align-items: center;
@@ -582,18 +550,17 @@
         }
         
         .alert-success {
-            background: #e8f5e8;
-            color: #155724;
-            border: 1px solid #c8e6c9;
+            background: var(--bg-hover);
+            color: var(--primary-darker);
+            border: 1px solid var(--primary-lighter);
         }
         
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #FEE2E2;
+            color: var(--danger);
+            border: 1px solid #FECACA;
         }
         
-        /* 底部信息样式 - 现代简约 */
         .footer {
             background: white;
             padding: 40px 0 20px;
@@ -619,7 +586,7 @@
         }
         
         .footer-column h3 {
-            color: #2E7D32;
+            color: var(--primary-dark);
             margin-bottom: 20px;
             font-size: 16px;
             font-weight: 600;
@@ -636,36 +603,29 @@
         }
         
         .footer-links a {
-            color: #6c757d;
+            color: var(--text-muted);
             text-decoration: none;
             transition: all 0.3s ease;
             font-size: 14px;
         }
         
         .footer-links a:hover {
-            color: #2E7D32;
+            color: var(--primary-dark);
             transform: translateX(4px);
         }
         
         .footer-copyright {
             text-align: center;
             padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #6c757d;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
             font-size: 14px;
         }
         
-        /* 动画效果 */
         @keyframes float {
-            0% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-8px);
-            }
-            100% {
-                transform: translateY(0);
-            }
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0); }
         }
         
         @keyframes slideUp {
@@ -679,7 +639,6 @@
             }
         }
         
-        /* 响应式设计 */
         @media (max-width: 768px) {
             .navbar-container {
                 flex-direction: column;
@@ -727,7 +686,7 @@
             }
             
             .tab {
-                border-radius: 8px;
+                border-radius: var(--radius);
             }
             
             .modal-content {
@@ -741,19 +700,18 @@
             }
         }
         
-        /* 登录成功提示 */
         .success-alert {
             position: fixed;
             top: 80px;
             right: 24px;
-            background: #d4edda;
-            color: #155724;
+            background: var(--bg-hover);
+            color: var(--primary-darker);
             padding: 16px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
             z-index: 1001;
             animation: slideInRight 0.3s ease-out;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid var(--primary);
         }
         
         @keyframes slideInRight {
@@ -766,11 +724,16 @@
                 transform: translateX(0);
             }
         }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
 
-<!-- 登录成功提示 -->
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
@@ -783,7 +746,6 @@
     {% endif %}
 {% endwith %}
 
-<!-- 导航栏 -->
 <nav class="navbar">
     <div class="navbar-container">
         <a href="{{ url_for('auth.index') }}" class="navbar-brand">
@@ -838,7 +800,6 @@
     </div>
 </nav>
 
-<!-- 英雄区域 -->
 <div class="hero">
     <div class="hero-container">
         <div class="hero-content">
@@ -850,7 +811,6 @@
     </div>
 </div>
 
-<!-- 主内容区域 -->
 <div class="main-content">
     <div class="content-container">
         {% if success_message %}
@@ -871,9 +831,7 @@
             {% endfor %}
         {% endif %}
         
-        <!-- 分栏布局容器 -->
         <div class="layout-container">
-            <!-- 左侧操作区 -->
             <div class="left-section">
                 <div class="operation-card">
                     <div class="form-group">
@@ -888,7 +846,6 @@
                         </div>
                     </div>
                     
-                    <!-- 上传图片模式 -->
                     <div id="upload-mode" class="mode-content active">
                         <div class="form-group">
                             <label>上传垃圾图片</label>
@@ -914,7 +871,6 @@
                         </div>
                     </div>
                     
-                    <!-- 拍照识别模式 -->
                     <div id="camera-mode" class="mode-content">
                         <div class="form-group">
                             <label>拍照识别</label>
@@ -925,10 +881,10 @@
                                 <button type="button" id="start-camera" onclick="startCamera()" class="btn-primary">
                                     <span>🎬</span> 开始摄像
                                 </button>
-                                <button type="button" id="take-photo" onclick="takePhoto()" style="display: none; margin-top: 12px;" class="btn-primary">
+                                <button type="button" id="take-photo" onclick="takePhoto()" style="display: none;" class="btn-primary">
                                     <span>📸</span> 拍照
                                 </button>
-                                <button type="button" id="stop-camera" onclick="stopCamera()" style="display: none; margin-top: 12px;" class="btn-secondary">
+                                <button type="button" id="stop-camera" onclick="stopCamera()" style="display: none;" class="btn-secondary">
                                     <span>⏹️</span> 停止摄像
                                 </button>
                             </div>
@@ -942,9 +898,7 @@
                 </div>
             </div>
             
-            <!-- 右侧结果区 -->
             <div class="right-section">
-                <!-- 识别结果 -->
                 <div id="recognition-result" class="recognition-result" style="display: none;">
                     <div class="result-header">
                         <span>🔍</span>
@@ -982,7 +936,6 @@
             </div>
         </div>
         
-        <!-- 反馈对话框 -->
         <div id="feedback-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -992,11 +945,11 @@
                 <p class="hero-subtitle" style="margin-bottom: 24px;">如果识别结果不正确，请告诉我们真实的分类</p>
                 <div class="form-group">
                     <label>垃圾名称</label>
-                    <input type="text" id="garbage-name" placeholder="请输入垃圾名称" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: #f8f9fa;">
+                    <input type="text" id="garbage-name" placeholder="请输入垃圾名称">
                 </div>
                 <div class="form-group">
                     <label>真实垃圾分类</label>
-                    <select id="real-category" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: #f8f9fa;">
+                    <select id="real-category">
                         <option value="">请选择分类</option>
                         <option value="可回收物">可回收物</option>
                         <option value="厨余垃圾">厨余垃圾</option>
@@ -1006,7 +959,7 @@
                 </div>
                 <div class="form-group">
                     <label>备注（可选）</label>
-                    <textarea id="feedback-note" rows="3" style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: #f8f9fa; resize: none;"></textarea>
+                    <textarea id="feedback-note" rows="3" style="resize: none;"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" onclick="submitFeedback()" class="btn-primary">
@@ -1022,7 +975,6 @@
     </div>
 </div>
 
-<!-- 底部信息 -->
 <footer class="footer">
     <div class="footer-container">
         <div class="footer-content">
@@ -1104,29 +1056,23 @@ window.addEventListener('beforeunload', function() {
 function switchMode(mode) {
     currentMode = mode;
     
-    // 更新标签状态
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => tab.classList.remove('active'));
     event.target.closest('.tab').classList.add('active');
     
-    // 显示对应模式内容
     document.getElementById('upload-mode').style.display = mode === 'upload' ? 'block' : 'none';
     document.getElementById('camera-mode').style.display = mode === 'camera' ? 'block' : 'none';
     
-    // 重置状态
     selectedImage = null;
     hasRecognized = false;
     document.getElementById('recognition-result').style.display = 'none';
     
-    // 移除has-result类
     const layoutContainer = document.querySelector('.layout-container');
     layoutContainer.classList.remove('has-result');
     
-    // 移除结果分类的highlight类
     const resultCategory = document.getElementById('result-category');
     resultCategory.classList.remove('highlight');
     
-    // 重置按钮文本
     const uploadBtn = document.getElementById('recognize-btn');
     const cameraBtn = document.getElementById('recognize-btn-camera');
     uploadBtn.innerHTML = '<span>🤖 开始识别</span>';
@@ -1135,7 +1081,6 @@ function switchMode(mode) {
     stopCamera();
 }
 
-// 上传图片预览
 document.getElementById('image-upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
@@ -1155,30 +1100,27 @@ document.getElementById('image-upload').addEventListener('change', function(e) {
     }
 });
 
-// 点击上传区域触发文件选择
 document.querySelector('.upload-area').addEventListener('click', function(e) {
-    // 只有在没有选择图片时才触发文件选择器
     if (!selectedImage) {
         document.getElementById('image-upload').click();
     }
 });
 
-// 拖拽上传
 const uploadArea = document.querySelector('.upload-area');
 uploadArea.addEventListener('dragover', function(e) {
     e.preventDefault();
-    this.style.borderColor = '#4CAF50';
-    this.style.backgroundColor = '#f0f7f0';
+    this.style.borderColor = 'var(--primary)';
+    this.style.backgroundColor = 'var(--bg-hover)';
 });
 uploadArea.addEventListener('dragleave', function() {
-    this.style.borderColor = '#e9ecef';
-    this.style.backgroundColor = '#f8f9fa';
+    this.style.borderColor = 'var(--border)';
+    this.style.backgroundColor = 'var(--bg-card)';
 });
 uploadArea.addEventListener('drop', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    this.style.borderColor = '#e9ecef';
-    this.style.backgroundColor = '#f8f9fa';
+    this.style.borderColor = 'var(--border)';
+    this.style.backgroundColor = 'var(--bg-card)';
     
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -1210,37 +1152,31 @@ function removeImage() {
     document.getElementById('image-preview').style.display = 'none';
     document.getElementById('upload-preview').style.display = 'block';
     
-    // 隐藏识别结果
     document.getElementById('recognition-result').style.display = 'none';
     const layoutContainer = document.querySelector('.layout-container');
     layoutContainer.classList.remove('has-result');
     const resultCategory = document.getElementById('result-category');
     resultCategory.classList.remove('highlight');
     
-    // 重置识别标记和按钮文本
     hasRecognized = false;
     const btn = document.getElementById('recognize-btn');
     btn.innerHTML = '<span>🤖 开始识别</span>';
 }
 
-// 相机功能
 async function startCamera() {
     try {
-        // 检查浏览器是否支持相机
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert('您的浏览器不支持相机功能，请使用上传图片方式');
             return;
         }
         
-        // 先显示视频元素
         const camera = document.getElementById('camera');
         camera.style.display = 'block';
         document.getElementById('camera-placeholder').style.display = 'none';
         document.getElementById('start-camera').style.display = 'none';
-        document.getElementById('take-photo').style.display = 'inline-block';
-        document.getElementById('stop-camera').style.display = 'inline-block';
+        document.getElementById('take-photo').style.display = 'inline-flex';
+        document.getElementById('stop-camera').style.display = 'inline-flex';
         
-        // 请求相机权限
         cameraStream = await navigator.mediaDevices.getUserMedia({ 
             video: { 
                 width: { ideal: 1280 },
@@ -1249,19 +1185,16 @@ async function startCamera() {
             } 
         });
         
-        // 设置视频源
         camera.srcObject = cameraStream;
         
-        // 确保视频播放
         camera.play().catch(err => console.log('自动播放失败:', err));
         
     } catch (error) {
         console.error('相机错误:', error);
         
-        // 恢复UI状态
         document.getElementById('camera').style.display = 'none';
         document.getElementById('camera-placeholder').style.display = 'block';
-        document.getElementById('start-camera').style.display = 'inline-block';
+        document.getElementById('start-camera').style.display = 'inline-flex';
         document.getElementById('take-photo').style.display = 'none';
         document.getElementById('stop-camera').style.display = 'none';
         
@@ -1275,7 +1208,6 @@ async function startCamera() {
             errorMessage = '未找到相机设备';
             solution = '请确保您的设备已连接相机，或尝试使用上传图片方式';
         } else if (error.name === 'NotReadableError') {
-            errorMessage = '相机被其他应用占用';
             solution = '请关闭其他正在使用相机的应用程序，然后重试';
         } else {
             errorMessage = '无法访问相机：' + error.message;
@@ -1291,18 +1223,15 @@ function takePhoto() {
     const canvas = document.getElementById('camera-preview');
     const ctx = canvas.getContext('2d');
     
-    // 检查视频是否已准备好
     if (!camera.videoWidth || !camera.videoHeight) {
         alert('相机尚未准备好，请稍后再试');
         return;
     }
     
-    // 设置 canvas 尺寸并绘制视频帧
     canvas.width = camera.videoWidth;
     canvas.height = camera.videoHeight;
     ctx.drawImage(camera, 0, 0, canvas.width, canvas.height);
     
-    // 将 canvas 转换为 blob
     canvas.toBlob(function(blob) {
         if (blob) {
             const timestamp = Date.now();
@@ -1331,27 +1260,24 @@ function stopCamera() {
     document.getElementById('camera').style.display = 'none';
     document.getElementById('camera-preview').style.display = 'none';
     document.getElementById('camera-placeholder').style.display = 'block';
-    document.getElementById('start-camera').style.display = 'inline-block';
+    document.getElementById('start-camera').style.display = 'inline-flex';
     document.getElementById('take-photo').style.display = 'none';
     document.getElementById('stop-camera').style.display = 'none';
     selectedImage = null;
     currentRecordId = null;
     lastRecognizedImageId = null;
     
-    // 隐藏识别结果
     document.getElementById('recognition-result').style.display = 'none';
     const layoutContainer = document.querySelector('.layout-container');
     layoutContainer.classList.remove('has-result');
     const resultCategory = document.getElementById('result-category');
     resultCategory.classList.remove('highlight');
     
-    // 重置识别标记和按钮文本
     hasRecognized = false;
     const btn = document.getElementById('recognize-btn-camera');
     btn.innerHTML = '<span>🤖 开始识别</span>';
 }
 
-// 识别图片
 async function recognizeImage() {
     if (!selectedImage) {
         alert('请先上传图片或拍照');
@@ -1360,7 +1286,6 @@ async function recognizeImage() {
     
     await confirmPreviousRecognition();
     
-    // 获取当前模式的识别按钮
     const btnId = currentMode === 'upload' ? 'recognize-btn' : 'recognize-btn-camera';
     const btn = document.getElementById(btnId);
     
@@ -1382,11 +1307,9 @@ async function recognizeImage() {
         
         const data = await response.json();
         if (data.success) {
-            // 添加has-result类到布局容器
             const layoutContainer = document.querySelector('.layout-container');
             layoutContainer.classList.add('has-result');
             
-            // 显示识别结果
             document.getElementById('recognition-result').style.display = 'block';
             const resultCategory = document.getElementById('result-category');
             resultCategory.textContent = data.result.category;
@@ -1395,13 +1318,11 @@ async function recognizeImage() {
             document.getElementById('result-time').textContent = data.result.time + '秒';
             document.getElementById('knowledge-content').textContent = data.knowledge;
             
-            // 保存识别记录ID
             if (data.result.record_id) {
                 currentRecordId = data.result.record_id;
                 lastRecognizedImageId = getImageId(selectedImage);
             }
             
-            // 标记已识别
             hasRecognized = true;
         } else {
             alert('识别失败：' + data.message);
@@ -1411,12 +1332,10 @@ async function recognizeImage() {
         console.error('识别错误:', error);
     } finally {
         btn.disabled = false;
-        // 根据是否已识别显示不同的按钮文本
         btn.innerHTML = hasRecognized ? '<span>🔄 重新识别</span>' : '<span>🤖 开始识别</span>';
     }
 }
 
-// 反馈功能
 function feedback() {
     document.getElementById('feedback-modal').style.display = 'flex';
 }
@@ -1440,7 +1359,6 @@ async function submitFeedback() {
         formData.append('real_category', realCategory);
         formData.append('note', note);
         
-        // 获取识别结果信息
         const resultCategory = document.getElementById('result-category').textContent;
         const resultConfidence = document.getElementById('result-confidence').textContent.replace('%', '');
         
@@ -1477,27 +1395,21 @@ async function submitFeedback() {
 }
 
 async function resetRecognition() {
-    // 移除has-result类
     const layoutContainer = document.querySelector('.layout-container');
     layoutContainer.classList.remove('has-result');
     
-    // 重置识别状态
     document.getElementById('recognition-result').style.display = 'none';
     
-    // 移除结果分类的highlight类
     const resultCategory = document.getElementById('result-category');
     resultCategory.classList.remove('highlight');
     
-    // 重置识别标记（保持currentRecordId和lastRecognizedImageId不变，允许用户重新识别同一张图片并提交反馈）
     hasRecognized = false;
     
-    // 重置按钮文本
     const btnId = currentMode === 'upload' ? 'recognize-btn' : 'recognize-btn-camera';
     const btn = document.getElementById(btnId);
     btn.innerHTML = '<span>🤖 开始识别</span>';
 }
 
-// 点击模态框外部关闭
 document.getElementById('feedback-modal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeFeedback();

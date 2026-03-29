@@ -174,7 +174,6 @@ def login():
         password = request.form.get('password', '').strip()
         captcha = request.form.get('captcha', '').strip()
         
-        # 错误信息字典，按字段分类
         field_errors = {
             'username': [],
             'password': [],
@@ -182,7 +181,7 @@ def login():
         }
         
         if not username:
-            field_errors['username'].append('请输入用户名')
+            field_errors['username'].append('请输入用户名或邮箱')
         
         if not password:
             field_errors['password'].append('请输入密码')
@@ -192,32 +191,31 @@ def login():
         elif not verify_captcha(captcha):
             field_errors['captcha'].append('验证码错误')
         
-        # 检查是否有错误
         has_errors = any(errors for errors in field_errors.values())
         if has_errors:
             return render_template('login.html', 
                                    username=username,
                                    field_errors=field_errors)
         
-        # 查找用户
-        user = User.query.filter_by(username=username, is_admin=False).first()
+        user = User.query.filter(
+            db.or_(
+                User.username == username,
+                User.email == username
+            ),
+            User.is_admin == False
+        ).first()
         
-        # 检查是否锁定
         if user and user.is_locked():
             remaining_minutes = int((user.locked_until - get_china_time()).total_seconds() / 60)
             field_errors['username'].append(f'账号已锁定，请 {remaining_minutes} 分钟后再试')
-        # 验证密码
         elif user and user.check_password(password):
-            # 登录成功，重置失败次数
             user.reset_login_attempts()
             session['user_id'] = user.id
             session['username'] = user.username
             flash('登录成功！', 'success')
             return redirect(url_for('auth.index'))
         else:
-            # 用户名或密码错误
-            field_errors['password'].append('用户名或密码错误')
-            # 增加登录失败次数
+            field_errors['password'].append('用户名/邮箱或密码错误')
             if user:
                 user.increment_login_attempts(5, 10)
                 remaining_attempts = 5 - user.login_attempts
