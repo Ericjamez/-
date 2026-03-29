@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSort Pro | 极限纠错训练场</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+        body { background-color: #f0fdf4; font-family: 'PingFang SC', sans-serif; height: 100vh; overflow: hidden; }
+        .title-font { font-family: 'ZCOOL KuaiLe', cursive; }
+        
+        #start-screen {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+                        url('bg2.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .bin { transition: all 0.2s ease; cursor: pointer; }
+        .bin:hover { transform: translateY(-5px); filter: brightness(1.1); }
+        .trash-photo { max-height: 180px; width: auto; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+        
+        .history-item { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        .ai-btn-pulse { animation: ai-pulse 2s infinite; }
+        @keyframes ai-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .badge-item { opacity: 0.3; filter: grayscale(1); transition: all 0.3s; }
+        .badge-unlocked { opacity: 1; filter: grayscale(0); transform: scale(1.05); }
+        .certificate-bg { 
+    background: url('bg3.png');
+    background-size: cover;
+    background-position: center;
+}
+    </style>
+</head>
+<body class="flex flex-row select-none p-4 gap-4">
+
+<!-- 启动页 -->
+<div id="start-screen" class="fixed inset-0 z-50 flex justify-center items-center text-center p-6 transition-all duration-700">
+    <div class="glass-card p-12 rounded-[60px] shadow-2xl max-w-lg w-full">
+        <div class="w-16 h-16 bg-emerald-500 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white shadow-lg rotate-6">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        </div>
+        <h1 class="text-6xl font-black text-slate-800 mb-2 title-font tracking-tighter">分类大挑战</h1>
+        <p class="text-emerald-700 font-bold mb-8 italic">“不答对，不许走！”</p>
+        
+        <div class="bg-emerald-50 rounded-[35px] p-6 mb-10 border-2 border-emerald-100 shadow-inner">
+            <p class="text-lg font-black text-emerald-800 uppercase tracking-widest mb-1 flex items-center justify-center">
+                <span class="mr-2">🏆</span> 最高纪录 <span class="ml-2">🏆</span>
+            </p>
+            <p id="start-best-score" class="text-6xl font-black text-emerald-600 italic tracking-tighter">000</p>
+        </div>
+
+        <button onclick="startGame()" class="w-full py-5 bg-emerald-500 text-white rounded-3xl font-black text-2xl shadow-xl hover:bg-emerald-600 hover:shadow-emerald-200 transition active:scale-95 mb-4">
+            进入极限模式
+        </button>
+        <button onclick="location.href='index.html'" class="w-full py-3 bg-white text-slate-400 rounded-2xl font-bold border border-slate-100 hover:text-slate-600 transition">
+            返回主工作站
+        </button>
+    </div>
+</div>
+
+<!-- 游戏主区域 -->
+<div class="flex-1 flex flex-col items-center justify-between h-full bg-white/40 rounded-[50px] p-6 border border-white">
+    <div class="w-full flex justify-between items-center">
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-emerald-100 min-w-[120px]">
+            <div class="text-emerald-500 text-[10px] font-black uppercase">当前得分</div>
+            <div id="score" class="text-3xl font-black text-emerald-900 italic">000</div>
+        </div>
+        <div id="combo-container" class="opacity-0 transition-opacity">
+            <div id="combo-val" class="text-2xl font-black text-yellow-500 italic">COMBO X1</div>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-orange-100 min-w-[120px] text-right">
+            <div class="text-orange-500 text-[10px] font-black uppercase">剩余时间</div>
+            <div id="timer" class="text-3xl font-black text-orange-600">60</div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col items-center justify-center space-y-4">
+        <div id="trash-box" class="relative">
+            <img src="wanzi.png" class="trash-photo border-4 border-white" alt="待分垃圾">
+            <div id="attempt-badge" class="absolute -top-4 -right-4 bg-red-500 text-white w-10 h-10 rounded-full hidden items-center justify-center shadow-lg border-2 border-white font-black animate-bounce">!</div>
+        </div>
+        <div class="text-center">
+            <div id="trash-name" class="text-4xl font-black text-emerald-900 tracking-tight bg-white px-10 py-3 rounded-full shadow-xl inline-block border-2 border-emerald-50">加载中...</div>
+            <div id="error-hint" class="text-red-500 font-bold text-sm mt-2 opacity-0">已经点错 <span id="err-count">0</span> 次了，加油！</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+        <button onclick="checkSort(1)" class="bin p-5 bg-blue-500 rounded-3xl shadow-xl text-white">
+            <div class="text-4xl mb-1">♻️</div>
+            <div class="font-black text-xs uppercase">可回收物</div>
+        </button>
+        <button onclick="checkSort(2)" class="bin p-5 bg-red-500 rounded-3xl shadow-xl text-white">
+            <div class="text-4xl mb-1">⚠️</div>
+            <div class="font-black text-xs uppercase">有害垃圾</div>
+        </button>
+        <button onclick="checkSort(4)" class="bin p-5 bg-emerald-600 rounded-3xl shadow-xl text-white">
+            <div class="text-4xl mb-1">🍎</div>
+            <div class="font-black text-xs uppercase">湿垃圾</div>
+        </button>
+        <button onclick="checkSort(8)" class="bin p-5 bg-slate-700 rounded-3xl shadow-xl text-white">
+            <div class="text-4xl mb-1">🗑️</div>
+            <div class="font-black text-xs uppercase">干垃圾</div>
+        </button>
+    </div>
+</div>
+
+<!-- 右侧记录 -->
+<div class="w-80 bg-white/80 backdrop-blur rounded-[40px] shadow-2xl p-6 flex flex-col border border-emerald-50">
+    <h3 class="text-lg font-black text-emerald-800 mb-4 flex items-center">🕒 答题实时记录</h3>
+    <div id="session-history" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-2">
+        <p class="text-center text-slate-300 text-xs mt-20 italic">等待第一手数据...</p>
+    </div>
+</div>
+
+<!-- 勋章墙弹窗 -->
+<div id="badge-modal" class="fixed inset-0 bg-black/80 backdrop-blur z-[70] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-black text-emerald-800">🏅 环保勋章墙</h3>
+            <button onclick="closeBadgeModal()" class="text-slate-400 font-bold text-xl">✕</button>
+        </div>
+        <div class="grid grid-cols-3 gap-4" id="badge-container">
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">🌱</div>
+                <p class="text-xs font-bold">初级分类员</p>
+                <p class="text-[10px] text-slate-400">首次正确分类</p>
+            </div>
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">⚡</div>
+                <p class="text-xs font-bold">连击大师</p>
+                <p class="text-[10px] text-slate-400">连续10次正确</p>
+            </div>
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">☣️</div>
+                <p class="text-xs font-bold">剧毒终结者</p>
+                <p class="text-[10px] text-slate-400">全对有害垃圾</p>
+            </div>
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">🌍</div>
+                <p class="text-xs font-bold">环保卫士</p>
+                <p class="text-[10px] text-slate-400">减碳达标</p>
+            </div>
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">🎯</div>
+                <p class="text-xs font-bold">百发百中</p>
+                <p class="text-[10px] text-slate-400">正确率100%</p>
+            </div>
+            <div class="badge-item text-center p-4 rounded-2xl border border-slate-100">
+                <div class="text-4xl mb-2">🏆</div>
+                <p class="text-xs font-bold">分类王者</p>
+                <p class="text-[10px] text-slate-400">最高分记录</p>
+            </div>
+        </div>
+        <button onclick="closeBadgeModal()" class="w-full mt-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold">关闭</button>
+    </div>
+</div>
+
+<!-- 碳足迹电子票据 -->
+<div id="certificate-modal" class="fixed inset-0 bg-black/80 backdrop-blur z-[70] hidden items-center justify-center p-4">
+    <div class="relative">
+        <div id="carbon-certificate" class="certificate-bg w-[380px] rounded-3xl p-8 shadow-2xl border-4 border-white">
+            <div class="text-center">
+                <h3 class="text-2xl font-black text-emerald-800 title-font">环保贡献证书</h3>
+                <p class="text-xs text-emerald-600 mt-1">Carbon Footprint Certificate</p>
+                <div class="text-6xl my-4">🌳</div>
+                <p class="text-lg font-bold text-slate-800" id="cert-user">匿名环保官</p>
+                <div class="my-4 space-y-2 text-sm">
+                    <p>本局得分：<span id="cert-score" class="font-black text-emerald-600">0</span></p>
+                    <p>正确分类：<span id="cert-correct" class="font-black text-blue-600">0</span> 件</p>
+                    <p>减少碳排放：<span id="cert-carbon" class="font-black text-green-600">0.0</span> kg</p>
+                    <p>超越用户：<span id="cert-rank" class="font-black text-orange-500">0%</span></p>
+                </div>
+                <p class="text-xs italic text-slate-500 mt-4">感谢你为地球做出贡献 ✨</p>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-4">
+            <button onclick="saveCertificate()" class="flex-1 py-3 bg-white text-emerald-800 rounded-2xl font-bold shadow">💾 保存图片</button>
+            <button onclick="closeCertificateModal()" class="flex-1 py-3 bg-emerald-500 text-white rounded-2xl font-bold">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 结算报告 -->
+<div id="result-modal" class="fixed inset-0 bg-emerald-950/95 backdrop-blur-2xl z-[60] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[50px] max-w-2xl w-full p-10 flex flex-col max-h-[95vh] relative overflow-hidden">
+        <div id="new-record-badge" class="absolute -right-12 -top-12 w-40 h-40 bg-yellow-400 rotate-45 flex items-end justify-center pb-4 hidden">
+            <span class="text-yellow-900 font-black text-xs uppercase tracking-widest">New Record</span>
+        </div>
+
+        <div class="text-center mb-6">
+            <h2 class="text-5xl font-black text-slate-800 title-font">训练评估报告</h2>
+            <p class="text-emerald-500 font-bold text-sm">环保智辨官 你的专属数据分析已送达</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div class="bg-slate-50 p-4 rounded-3xl text-center">
+                <p class="text-[9px] font-black text-slate-400 uppercase">最终得分</p>
+                <p id="final-score" class="text-3xl font-black text-emerald-600">0</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-3xl text-center border-2 border-emerald-100">
+                <p class="text-[9px] font-black text-emerald-400 uppercase">历史最高</p>
+                <p id="best-score" class="text-3xl font-black text-emerald-700">0</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-3xl text-center">
+                <p class="text-[9px] font-black text-slate-400 uppercase">正确率</p>
+                <p id="final-accuracy" class="text-3xl font-black text-blue-600">0%</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-3xl text-center">
+                <p class="text-[9px] font-black text-slate-400 uppercase">完成物品</p>
+                <p id="final-count" class="text-3xl font-black text-orange-500">0</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3 mb-4">
+            <button onclick="openBadgeModal()" class="flex-1 py-3 bg-yellow-100 text-yellow-800 rounded-2xl font-bold">🏅 查看勋章墙</button>
+            <button onclick="openCertificateModal()" class="flex-1 py-3 bg-green-100 text-green-800 rounded-2xl font-bold">🌳 碳足迹票据</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto pr-2 custom-scroll space-y-4">
+            <div class="bg-slate-50 rounded-3xl p-5 border border-slate-100">
+                <h3 class="text-sm font-black text-slate-700 mb-3 flex items-center">📊 错题深度分析报告</h3>
+                <div id="mistake-analysis" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-emerald-50 rounded-3xl p-5 border border-emerald-100 relative overflow-hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-black text-emerald-800 flex items-center">
+                        <span class="mr-2">🤖</span> AI 智能画像诊断
+                    </h3>
+                    <button id="ai-gen-btn" onclick="generateAIReport()" class="ai-btn-pulse text-[10px] bg-emerald-500 text-white px-4 py-1.5 rounded-full font-bold hover:bg-emerald-600 transition">
+                        生成本局深度分析
+                    </button>
+                </div>
+                <div id="ai-report-content" class="text-xs text-emerald-700 leading-relaxed italic">
+                    点击按钮，AI 将分析您的分类习惯并给出量身定制的建议...
+                </div>
+                <div id="ai-loading" class="hidden absolute inset-0 bg-emerald-50/90 flex items-center justify-center">
+                    <div class="flex space-x-2">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style="animation-delay:0.2s"></div>
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style="animation-delay:0.4s"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+            <button onclick="location.reload()" class="flex-1 py-5 bg-emerald-500 text-white rounded-3xl font-black text-xl shadow-xl hover:bg-emerald-600 transition">再来挑战</button>
+            <button onclick="location.href='index.html'" class="px-8 py-5 bg-slate-100 text-slate-600 rounded-3xl font-black">返回大厅</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const LABELS = { 1: "可回收物", 2: "有害垃圾", 4: "湿垃圾", 8: "干垃圾" };
+    let score = 0, combo = 0, timeLeft = 60, totalItemsHandled = 0, correctClicks = 0, totalClicks = 0;
+    let gameItems = [], currentItem = null, gameActive = false;
+    let mistakeStats = {};
+    let sessionLogs = [];
+    let harmfulCorrectCount = 0;
+    let maxCombo = 0;
+
+    // 成就系统
+    let unlockedBadges = JSON.parse(localStorage.getItem('unlocked_badges')) || [];
+    const badgeList = ['beginner', 'combo10', 'harmful', 'carbon', 'perfect', 'champion'];
+
+    window.onload = () => {
+        const best = localStorage.getItem('deepsort_best') || 0;
+        document.getElementById('start-best-score').innerText = best.toString().padStart(3, '0');
+        renderBadges();
+    };
+
+    // 开始游戏
+    async function startGame() {
+        document.getElementById('start-screen').classList.add('opacity-0');
+        setTimeout(() => document.getElementById('start-screen').classList.add('hidden'), 500);
+        try {
+            const resp = await fetch('http://127.0.0.1:8000/game_items');
+            gameItems = await resp.json();
+            gameActive = true; 
+            nextItem(); 
+            startTimer();
+        } catch (e) { 
+            alert("后端连接失败，请确保 server.py 已启动"); 
+            location.reload(); 
+        }
+    }
+
+    // 计时器
+    function startTimer() {
+        const t = setInterval(() => {
+            if (!gameActive) return clearInterval(t);
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            if (timeLeft <= 0) { 
+                clearInterval(t); 
+                endGame(); 
+            }
+        }, 1000);
+    }
+
+    // 下一题
+    function nextItem() {
+        currentItem = gameItems[Math.floor(Math.random() * gameItems.length)];
+        document.getElementById('trash-name').innerText = currentItem.name;
+        document.getElementById('attempt-badge').classList.add('hidden');
+        document.getElementById('error-hint').classList.add('opacity-0');
+        currentItem.errCount = 0;
+    }
+
+    // 核心判断
+    async function checkSort(userLabel) {
+        if (!gameActive) return;
+        totalClicks++;
+
+        if (userLabel === currentItem.label) {
+            correctClicks++; 
+            totalItemsHandled++; 
+            combo++;
+            if(combo>maxCombo) maxCombo=combo;
+            score += 10 * (combo > 5 ? 2 : 1);
+            
+            if(currentItem.label === 2) harmfulCorrectCount++;
+            checkAchievements();
+            
+            addSessionLog(currentItem.name, "正确", "text-emerald-500");
+            confetti({ particleCount: 15, origin: { y: 0.8 }, colors: ['#10b981'] });
+            showCombo(); 
+            nextItem();
+        } else {
+            currentItem.errCount++;
+            score = Math.max(0, score - 5); 
+            combo = 0; 
+            hideCombo();
+            document.getElementById('attempt-badge').innerText = currentItem.errCount;
+            document.getElementById('attempt-badge').classList.remove('hidden');
+            document.getElementById('err-count').innerText = currentItem.errCount;
+            document.getElementById('error-hint').classList.remove('opacity-0');
+            document.getElementById('trash-box').classList.add('shake');
+            setTimeout(() => document.getElementById('trash-box').classList.remove('shake'), 400);
+
+            if (!mistakeStats[currentItem.name]) {
+                try {
+                    const ai = await fetch('http://127.0.0.1:8000/predict', {
+                        method: 'POST', 
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({name: currentItem.name})
+                    }).then(r => r.json());
+                    mistakeStats[currentItem.name] = { count: 1, correct: currentItem.label, guide: ai.guide || "请参考官方标准投放" };
+                } catch (e) {
+                    mistakeStats[currentItem.name] = { count: 1, correct: currentItem.label, guide: "暂无科普指南" };
+                }
+            } else { 
+                mistakeStats[currentItem.name].count++; 
+            }
+
+            fetch('http://127.0.0.1:8000/log_game_mistake', {
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({name: currentItem.name, wrong_label: userLabel, correct_label: currentItem.label})
+            });
+
+            addSessionLog(currentItem.name, `错误(${LABELS[userLabel]})`, "text-red-500");
+        }
+        document.getElementById('score').innerText = score.toString().padStart(3, '0');
+    }
+
+    // 成就检测
+    function checkAchievements() {
+        if(correctClicks >= 1) unlockBadge('beginner');
+        if(maxCombo >= 10) unlockBadge('combo10');
+        if(harmfulCorrectCount >= 5) unlockBadge('harmful');
+        if(score >= 300) unlockBadge('carbon');
+        if(totalClicks > 0 && correctClicks === totalClicks) unlockBadge('perfect');
+    }
+
+    function unlockBadge(key) {
+        if(!unlockedBadges.includes(key)) {
+            unlockedBadges.push(key);
+            localStorage.setItem('unlocked_badges', JSON.stringify(unlockedBadges));
+            renderBadges();
+            confetti();
+        }
+    }
+
+    function renderBadges() {
+        const items = document.querySelectorAll('.badge-item');
+        items.forEach((el, i) => {
+            if(unlockedBadges.includes(badgeList[i])) {
+                el.classList.add('badge-unlocked');
+            }
+        });
+    }
+
+    // 日志
+    function addSessionLog(name, result, colorClass) {
+        const container = document.getElementById('session-history');
+        if (sessionLogs.length === 0) container.innerHTML = '';
+        const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const html = `<div class="history-item bg-white p-3 rounded-2xl shadow-sm border-l-4 ${result.includes('正确') ? 'border-emerald-400' : 'border-red-400'} flex justify-between items-center"><div><p class="text-xs font-black text-slate-700">${name}</p><p class="text-[10px] ${colorClass} font-bold">${result}</p></div><span class="text-[9px] text-slate-300 font-mono">${time}</span></div>`;
+        container.insertAdjacentHTML('afterbegin', html);
+        sessionLogs.push({ name, result });
+    }
+
+    // AI 报告
+    async function generateAIReport() {
+        const btn = document.getElementById('ai-gen-btn');
+        const loading = document.getElementById('ai-loading');
+        const content = document.getElementById('ai-report-content');
+        
+        btn.disabled = true;
+        loading.classList.remove('hidden');
+
+        const mistakesForAI = Object.entries(mistakeStats).map(([name, data]) => ({
+            item: name,
+            correct_label_name: LABELS[data.correct],
+            err_count: data.count
+        }));
+
+        try {
+            const resp = await fetch('http://127.0.0.1:8000/get_ai_analysis', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    score: score,
+                    accuracy: Math.round((correctClicks/totalClicks)*100) + "%",
+                    mistakes: mistakesForAI
+                })
+            });
+            const data = await resp.json();
+            content.innerHTML = data.report.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            btn.innerText = "诊断完成";
+            btn.classList.remove('ai-btn-pulse');
+        } catch (e) {
+            content.innerText = "生成失败，请重试。";
+            btn.disabled = false;
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+
+    // 结束游戏
+    function endGame() {
+        gameActive = false;
+        const best = parseInt(localStorage.getItem('deepsort_best') || 0);
+        
+        if (score > best) {
+            localStorage.setItem('deepsort_best', score);
+            unlockBadge('champion');
+            document.getElementById('new-record-badge').classList.remove('hidden');
+            const end = Date.now() + 5000;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#10b981', '#ffffff'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#3b82f6', '#ffffff'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        const accuracy = totalClicks === 0 ? 0 : Math.round((correctClicks/totalClicks)*100);
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('best-score').innerText = localStorage.getItem('deepsort_best');
+        document.getElementById('final-accuracy').innerText = accuracy + "%";
+        document.getElementById('final-count').innerText = totalItemsHandled;
+
+        const sortedMistakes = Object.entries(mistakeStats).sort((a, b) => b[1].count - a[1].count);
+        const analysisEl = document.getElementById('mistake-analysis');
+        analysisEl.innerHTML = sortedMistakes.length ? sortedMistakes.map(([name, data]) => `
+            <div class="p-4 rounded-2xl mb-2 ${data.count >= 3 ? 'bg-red-100 border-2 border-red-300' : 'bg-white border border-slate-200'}">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-black ${data.count >= 3 ? 'text-red-700' : 'text-slate-800'}">${name}</span>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold ${data.count >= 3 ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-600'}">答错 ${data.count} 次</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mb-2">正确答案：<span class="text-emerald-600 font-bold">${LABELS[data.correct]}</span></p>
+                <p class="text-[10px] italic text-slate-400 leading-tight">AI科普：${data.guide}</p>
+            </div>`).join('') : '<p class="text-center text-emerald-500 font-bold p-10">你是天才吗？完全没有错题！</p>';
+
+        document.getElementById('result-modal').classList.remove('hidden');
+        document.getElementById('result-modal').classList.add('flex');
+    }
+
+    // COMBO
+    function showCombo() { 
+        if(combo >= 2) { 
+            document.getElementById('combo-container').classList.remove('opacity-0'); 
+            document.getElementById('combo-val').innerText = `连击 X${combo}`; 
+        } 
+    }
+    function hideCombo() { 
+        document.getElementById('combo-container').classList.add('opacity-0'); 
+    }
+
+    // 勋章弹窗
+    function openBadgeModal() {
+        document.getElementById('badge-modal').style.display = 'flex';
+    }
+    function closeBadgeModal() {
+        document.getElementById('badge-modal').style.display = 'none';
+    }
+
+    // 碳足迹票据
+    function openCertificateModal() {
+        const carbonReduction = (correctClicks * 0.12).toFixed(1);
+        const rank = Math.min(99, Math.round(score / 5));
+        document.getElementById('cert-score').innerText = score;
+        document.getElementById('cert-correct').innerText = correctClicks;
+        document.getElementById('cert-carbon').innerText = carbonReduction;
+        document.getElementById('cert-rank').innerText = rank + '%';
+        document.getElementById('certificate-modal').style.display = 'flex';
+    }
+    function closeCertificateModal() {
+        document.getElementById('certificate-modal').style.display = 'none';
+    }
+    async function saveCertificate() {
+        const el = document.getElementById('carbon-certificate');
+        const canvas = await html2canvas(el);
+        const link = document.createElement('a');
+        link.download = '环保贡献证书.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+</script>
+</body>
+</html>

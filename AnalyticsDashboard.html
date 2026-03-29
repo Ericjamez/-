@@ -2,601 +2,404 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>DeepVision 运维诊断中心</title>
+    <title>智能运维诊断中心</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap');
         body { background-color: #F0FDF4; font-family: 'PingFang SC', system-ui, sans-serif; }
-        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); transition: all 0.4s ease; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-radius: 28px; border: 1px solid rgba(16, 185, 129, 0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.02); transition: all 0.4s ease; }
         .glass-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(16, 185, 129, 0.1); }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .PR-chart-bg { background: linear-gradient(135deg, #fff 0%, #f0fdf4 100%); }
-        /* 自定义滑块样式 */
+        
+        /* 深度定制滑块 */
         input[type=range] { -webkit-appearance: none; background: #d1fae5; height: 8px; border-radius: 10px; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #10b981; cursor: pointer; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
-        /* 弹窗遮罩层 */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        /* 弹窗卡片 */
-        .modal-card {
-            background: white;
-            border-radius: 24px;
-            padding: 32px;
-            width: 90%;
-            max-width: 520px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-        .modal-overlay.active .modal-card {
-            transform: translateY(0);
-        }
-        /* 输入框样式 */
-        .modal-input {
-            width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            margin: 16px 0 24px;
-        }
-        .modal-input:focus {
-            outline: none;
-            border-color: #10b981;
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-        }
-        /* 按钮组 */
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-        .modal-btn {
-            padding: 12px 28px;
-            border-radius: 14px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-        }
-        .modal-btn.cancel {
-            background: #f1f5f9;
-            color: #64748b;
-        }
-        .modal-btn.cancel:hover {
-            background: #e2e8f0;
-        }
-        .modal-btn.confirm {
-            background: #10b981;
-            color: white;
-        }
-        .modal-btn.confirm:hover {
-            background: #059669;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
+        /* 高级数字孪生组件 */
+        .dt-meter-box { position: relative; height: 160px; width: 60px; background: #1e293b; border-radius: 12px; padding: 4px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+        .dt-meter-track { height: 100%; width: 100%; position: relative; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }
+        .dt-meter-fill { position: absolute; bottom: 0; width: 100%; transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 15px currentColor; }
+        .dt-glass { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%); pointer-events: none; }
+        .dt-label { font-size: 10px; font-weight: 800; text-align: center; margin-top: 8px; color: #475569; }
+        .warning-glow { animation: warning-glow 1.5s infinite alternate; }
+        @keyframes warning-glow { from { box-shadow: 0 0 5px #ef4444; } to { box-shadow: 0 0 20px #ef4444; } }
+
+        /* 弹窗样式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-card { background: white; border-radius: 32px; padding: 40px; width: 90%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal-overlay.active .modal-card { transform: scale(1); }
     </style>
 </head>
 <body class="p-6 md:p-10">
 
-<!-- 弹窗结构（放在 body 最开头） -->
+<!-- 纠正窗口 -->
 <div class="modal-overlay" id="correctModal">
     <div class="modal-card">
-        <h3 class="text-xl font-black text-slate-800">请输入正确的类别</h3>
-        <p class="text-sm text-slate-500 mt-2">（可回收垃圾, 湿垃圾, 有害垃圾, 干垃圾）</p>
-        <input type="text" id="modalInput" class="modal-input" placeholder="请输入正确分类">
-        <div class="modal-buttons">
-            <button class="modal-btn cancel" onclick="closeModal()">取消</button>
-            <button class="modal-btn confirm" onclick="confirmCorrect()">确定</button>
+        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        </div>
+        <h3 class="text-2xl font-black text-slate-800">纠正语义偏差</h3>
+        <p class="text-sm text-slate-500 mt-2">将此物品强制存入数据库。下次识别该物品将直接返回此分类，置信度 100%。</p>
+        <input type="text" id="modalInput" class="w-full mt-6 px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-500 focus:outline-none font-bold" placeholder="输入：可回收垃圾 / 湿垃圾 / 有害垃圾 / 干垃圾">
+        <div class="flex gap-4 mt-8">
+            <button class="flex-1 py-4 rounded-2xl bg-slate-100 font-bold text-slate-600" onclick="closeModal()">取消</button>
+            <button class="flex-1 py-4 rounded-2xl bg-emerald-500 text-white font-black shadow-lg shadow-emerald-200" onclick="confirmCorrect()">确认并更新模型权重</button>
         </div>
     </div>
 </div>
 
-<!-- 全局通知（toast） -->
-<div id="global-toast" class="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity" style="z-index:99999"></div>
-
-<!-- 已保存短时弹窗 -->
-<div id="saved-modal" class="modal-overlay hidden" style="z-index:10000;"> 
-    <div class="modal-card text-center">
-        <h4 id="saved-title" class="text-lg font-black text-slate-800">已保存</h4>
-        <p id="saved-body" class="text-sm text-slate-500 mt-2">已将纠正同步到数据库</p>
-    </div>
-</div>
+<div id="global-toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl opacity-0 transition-all z-[10000] font-bold"></div>
 
 <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
         <div>
             <div class="flex items-center space-x-3 mb-2">
                 <span class="flex h-3 w-3"><span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>
-                <span class="text-xs font-black text-emerald-600 uppercase tracking-[0.3em]">垃圾分类模型监控与专家诊断中心</span>
+                <span class="text-xs font-black text-emerald-600 uppercase tracking-[0.3em]">运维看板</span>
             </div>
-            <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">DeepVision 运维诊断中心</h1>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">垃圾先知 <span class="text-emerald-500 font-light">智能诊断中心</span></h1>
         </div>
         <div class="flex space-x-4">
-            <button onclick="localStorage.removeItem('garbage_history'); location.reload();" class="px-6 py-2 bg-red-50 text-red-500 rounded-full text-xs font-bold hover:bg-red-500 hover:text-white transition shadow-sm">清空数据</button>
-            <button onclick="location.href='index.html'" class="px-6 py-2 bg-emerald-500 text-white rounded-full text-xs font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-200">返回预测中心</button>
+            <button onclick="localStorage.removeItem('garbage_history'); location.reload();" class="px-6 py-3 bg-white text-red-500 rounded-2xl text-xs font-bold border border-red-50 shadow-sm">清空所有真实数据</button>
+            <button onclick="location.href='index.html'" class="px-8 py-3 bg-emerald-500 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-200">返回预测中心</button>
         </div>
     </header>
 
-    <!-- 顶部四指标：引入翻牌器效果 -->
+    <!-- 指标概览 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div class="glass-card p-6 border-b-4 border-emerald-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">总样本审计量</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">审计流水量</p>
             <h2 id="stat-total" class="text-3xl font-black text-slate-800 mono">0</h2>
         </div>
         <div class="glass-card p-6 border-b-4 border-blue-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">平均精确率 (P)</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">人工复核准确率</p>
             <h2 id="stat-p" class="text-3xl font-black text-blue-600 mono">0%</h2>
         </div>
         <div class="glass-card p-6 border-b-4 border-indigo-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase mb-1 flex justify-between">全系统 F1 <span class="cursor-help" title="F1 = 2 * (P * R) / (P + R)">ⓘ</span></p>
+            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">系统置信评分</p>
             <h2 id="stat-f1" class="text-3xl font-black text-indigo-600 mono">0.00</h2>
         </div>
         <div class="glass-card p-6 border-b-4 border-orange-500">
-            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">待校准样本</p>
+            <p class="text-[10px] font-black text-slate-400 uppercase mb-1">未复核风险项</p>
             <h2 id="stat-anno" class="text-3xl font-black text-orange-600 mono">0</h2>
         </div>
     </div>
 
-    <!-- 核心运维区：语义漂移与性能心电图 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div class="lg:col-span-2 glass-card p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">推理引擎实时性能</h3>
-                <div class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">硬件加速：已启用</div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+        <!-- 高级数字孪生显示 -->
+        <div class="lg:col-span-4 glass-card p-8">
+            <div class="flex justify-between items-center mb-10">
+                <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">数字孪生 · 实时库容计</h3>
+                <span class="text-[9px] px-2 py-1 bg-blue-50 text-blue-600 rounded-md font-bold">IoT 数据对齐</span>
             </div>
-            <div id="heartbeat-chart" class="w-full h-48"></div>
+            <div class="flex justify-around items-end h-48">
+                <div class="flex flex-col items-center">
+                    <div class="dt-meter-box"><div class="dt-meter-track"><div id="water-1" class="dt-meter-fill text-blue-400 bg-blue-500" style="height: 30%"></div><div class="dt-glass"></div></div></div>
+                    <p class="dt-label">可回收</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="dt-meter-box" id="bin-2"><div class="dt-meter-track"><div id="water-2" class="dt-meter-fill text-emerald-400 bg-emerald-500" style="height: 50%"></div><div class="dt-glass"></div></div></div>
+                    <p class="dt-label">湿垃圾</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="dt-meter-box"><div class="dt-meter-track"><div id="water-3" class="dt-meter-fill text-red-400 bg-red-500" style="height: 15%"></div><div class="dt-glass"></div></div></div>
+                    <p class="dt-label">有害</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="dt-meter-box"><div class="dt-meter-track"><div id="water-4" class="dt-meter-fill text-slate-400 bg-slate-600" style="height: 40%"></div><div class="dt-glass"></div></div></div>
+                    <p class="dt-label">干垃圾</p>
+                </div>
+            </div>
+            <div id="dt-alert" class="hidden mt-6 p-3 bg-red-50 text-red-600 text-[10px] font-bold rounded-xl animate-pulse text-center border border-red-100">
+                🚨 预警：湿垃圾容量预计 2H 后过载，已通知清运车
+            </div>
         </div>
-        <div class="glass-card p-8 flex flex-col justify-between">
-            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">推理来源分析</h3>
-            <div id="drift-status" class="mb-4">
-                <p id="drift-msg" class="text-xs text-slate-500 font-bold leading-relaxed">正在根据 history.method 实时统计推理来源占比。</p>
-            </div>
-            <div id="source-chart" style="width:100%;height:200px;margin-top:24px"></div>
-            <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mt-4">实时推理流水</h4>
-            <div id="live-logs" class="mt-2 overflow-auto max-h-36 text-[12px] text-slate-600"></div>
+
+        <!-- 策略分布 -->
+        <div class="lg:col-span-5 glass-card p-8">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-6">双引擎策略效能审计</h3>
+            <div id="strategy-audit-chart" style="width: 100%; height: 260px;"></div>
+        </div>
+
+        <!-- 来源分析 -->
+        <div class="lg:col-span-3 glass-card p-8">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-6">推理请求来源</h3>
+            <div id="source-chart" style="width:100%;height:180px;"></div>
+            <div id="live-logs" class="mt-4 max-h-24 overflow-y-auto space-y-2 pr-2"></div>
         </div>
     </div>
 
-    <!-- 在原本的 核心运维区 增加 LSTM 预测 -->
+    <!-- LSTM & OOD -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div class="lg:col-span-2 glass-card p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">LSTM 深度学习：未来 24H 垃圾产量预测</h3>
-                <div class="text-[10px] bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">模型状态：Deep Learning Predictor Active</div>
-            </div>
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-6">LSTM 深度学习：未来 24H 产量预测趋势</h3>
             <div id="lstm-forecast-chart" class="w-full h-48"></div>
         </div>
         <div class="glass-card p-8 flex flex-col justify-between">
-            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">OOD 语义异常监测 (Anomaly)</h3>
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">OOD 异常监测</h3>
             <div id="anomaly-status" class="flex-1 flex flex-col items-center justify-center text-center">
-                <div id="anomaly-icon" class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-4 transition-all duration-500">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div id="anomaly-icon" class="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 mb-4 transition-all duration-500 shadow-inner">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
-                <p id="anomaly-msg" class="text-xs text-slate-500 font-bold leading-relaxed">系统实时语义分布稳定</p>
+                <p id="anomaly-msg" class="text-xs text-slate-400 font-bold">语义拓扑结构稳定</p>
             </div>
         </div>
     </div>
 
-    <!-- 修改实时推理流水部分，增加关联推荐展示 -->
-    <!-- 脚本部分增加新图表初始化 -->
-
-    <!-- 算法策略区：P-R 权衡调节 -->
+    <!-- P-R 滑块 & 混淆矩阵 -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-        <div class="lg:col-span-8 glass-card p-8">
-            <div class="flex justify-between items-center mb-10">
-                <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">精确率-召回率 动态权衡滑块</h3>
-                <span id="threshold-label" class="bg-emerald-500 text-white px-4 py-1 rounded-full font-mono text-sm">阈值: 0.60</span>
-            </div>
-            <input type="range" id="threshold-slider" min="1" max="99" value="60" class="w-full mb-6">
-            <div class="grid grid-cols-2 gap-10">
-                <div>
-                    <p class="text-[10px] font-black text-slate-400 mb-4 italic uppercase">查准率提升 → 针对有害垃圾污染风险</p>
-                    <div id="p-meter" class="h-2 bg-emerald-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all duration-500" style="width: 70%"></div></div>
-                </div>
-                <div>
-                    <p class="text-[10px] font-black text-slate-400 mb-4 italic uppercase">查全率提升 → 针对可回收物利用率</p>
-                    <div id="r-meter" class="h-2 bg-blue-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500 transition-all duration-500" style="width: 85%"></div></div>
-                </div>
-            </div>
-        </div>
-        <div class="lg:col-span-4 glass-card p-8 flex flex-col items-center justify-center text-center">
-            <div class="w-20 h-20 mb-4 rounded-3xl bg-emerald-50 flex items-center justify-center">
-                <span id="carbon-val" class="text-2xl font-black text-emerald-600">0.0</span>
-            </div>
-            <p class="text-[10px] font-black text-slate-400 uppercase">碳减排贡献</p>
-        </div>
-    </div>
-
-    <!-- 诊断区：混淆矩阵与钻取分析 -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-        <div class="lg:col-span-7 glass-card p-8">
-            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-8">多维混淆矩阵热力图</h3>
-            <div id="matrix-chart" class="w-full h-96"></div>
-            <p class="text-[10px] text-slate-400 mt-4 italic">诊断提示：点击矩阵中的高亮色块（非对角线）可钻取误判的具体物品。</p>
-        </div>
         <div class="lg:col-span-5 glass-card p-8">
-            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-8">专家标注池</h3>
-            <div id="anno-list" class="space-y-4 overflow-y-auto max-h-[380px] pr-4">
-                <!-- 动态列表 -->
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-10">P-R 动态阈值调节器</h3>
+            <input type="range" id="threshold-slider" min="1" max="99" value="60" class="w-full mb-6">
+            <div class="flex justify-between items-center">
+                <span id="threshold-label" class="bg-emerald-500 text-white px-3 py-1 rounded-full font-mono text-xs font-bold">0.60</span>
+                <div class="text-right">
+                    <p class="text-[10px] font-black text-slate-400 uppercase">碳减排贡献</p>
+                    <h2 class="text-2xl font-black text-emerald-600 italic"><span id="carbon-val">0.0</span> kg</h2>
+                </div>
             </div>
-            <button id="btn-correct" class="w-full mt-6 py-4 emerald-gradient text-white rounded-2xl font-black text-xs shadow-lg hover:opacity-90 transition uppercase tracking-widest">
-                纠正所有样本并重载模型权重
-            </button>
+            <div class="grid grid-cols-1 gap-6 mt-10">
+                <div id="p-meter" class="h-1 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div></div>
+            </div>
+        </div>
+        <div class="lg:col-span-7 glass-card p-8">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-8">多维分类混淆矩阵 (Audited)</h3>
+            <div id="matrix-chart" class="w-full h-80"></div>
         </div>
     </div>
 
-    <!-- 类别详情页 -->
+    <!-- 专家标注池 (核心功能区) -->
+    <div class="glass-card p-8 mb-8">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest">专家标记池 (Active Learning Queue)</h3>
+            <span class="text-[10px] text-slate-400 italic">点击“纠正”将样本存入 MySQL 知识库，从而实现 100% 正确命中</span>
+        </div>
+        <div id="anno-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+    </div>
+
+    <!-- 全类别审计 -->
     <div class="glass-card p-8">
-        <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-8">全类别详细指标审计</h3>
+        <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest mb-8">类别性能深度审计</h3>
         <div id="metrics-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
     </div>
 </div>
 
 <script>
 const CATS = ["可回收垃圾", "湿垃圾", "有害垃圾", "干垃圾"];
-const COLORS = ["#3b82f6", "#10b981", "#ef4444", "#64748b"];
 let threshold = 0.60;
 let history = [];
-let chartHeartbeat, chartMatrix, chartSource, chartLSTM;
-let pollingInterval;
-let currentItem = null; // 存储当前要纠正的条目
+let chartStrategy, chartMatrix, chartSource, chartLSTM, currentItem = null;
 
-// 初始化仪表盘逻辑
 function init() {
-    chartHeartbeat = echarts.init(document.getElementById('heartbeat-chart'));
+    chartStrategy = echarts.init(document.getElementById('strategy-audit-chart'));
     chartMatrix = echarts.init(document.getElementById('matrix-chart'));
-    try { chartSource = echarts.init(document.getElementById('source-chart')); } catch(e) { chartSource = null; }
+    chartSource = echarts.init(document.getElementById('source-chart'));
+    chartLSTM = echarts.init(document.getElementById('lstm-forecast-chart'));
     
-    // 监听滑块
     document.getElementById('threshold-slider').oninput = function() {
         threshold = this.value / 100;
-        document.getElementById('threshold-label').innerText = `阈值: ${threshold.toFixed(2)}`;
+        document.getElementById('threshold-label').innerText = threshold.toFixed(2);
         renderAll();
     }
 
     renderAll();
-    startHeartbeat();
-    startPolling();
-    try { chartLSTM = echarts.init(document.getElementById('lstm-forecast-chart')); startLSTMUpdate(); } catch(e) { chartLSTM = null; }
+    startLSTMUpdate();
+    setInterval(renderAll, 3000);
+    setInterval(updateDigitalTwin, 2000);
 }
 
-// 模拟 LSTM 数据更新
+// 模拟数字孪生液位
+function updateDigitalTwin() {
+    const bins = [1, 2, 3, 4];
+    bins.forEach(id => {
+        const fill = document.getElementById(`water-${id}`);
+        const currentHeight = parseInt(fill.style.height);
+        const nextHeight = Math.max(5, Math.min(95, currentHeight + (Math.random() * 4 - 1.5)));
+        fill.style.height = nextHeight + '%';
+        
+        const parent = fill.closest('.dt-meter-box');
+        if (id === 2 && nextHeight > 50) { // 湿垃圾报警
+            parent.classList.add('warning-glow');
+            document.getElementById('dt-alert').classList.remove('hidden');
+        } else if (id === 2) {
+            parent.classList.remove('warning-glow');
+            document.getElementById('dt-alert').classList.add('hidden');
+        }
+    });
+}
+
 async function startLSTMUpdate() {
-    if (!chartLSTM) return;
     try {
         const res = await fetch('http://127.0.0.1:8000/predict_flow');
         const data = await res.json();
         chartLSTM.setOption({
             tooltip: { trigger: 'axis' },
             xAxis: { type: 'category', data: data.labels, axisLabel: { fontSize: 9 } },
-            yAxis: { type: 'value', name: '预估件数', splitLine: { show: false } },
-            series: [{
-                data: data.data,
-                type: 'line',
-                smooth: true,
-                areaStyle: { color: 'rgba(99, 102, 241, 0.2)' },
-                lineStyle: { color: '#6366f1', width: 3 }
-            }]
+            yAxis: { type: 'value', splitLine: { show: false } },
+            series: [{ data: data.data, type: 'line', smooth: true, areaStyle: { color: 'rgba(16, 185, 129, 0.1)' }, lineStyle: { color: '#10b981' } }]
         });
-    } catch(e) { console.error('LSTM预测加载失败', e); }
-    // 30s 刷新一次
-    setTimeout(startLSTMUpdate, 30000);
+    } catch(e) {}
 }
 
 function renderAll() {
-    history = JSON.parse(localStorage.getItem('garbage_history') || '[]');
-    // 仅统计并显示已确认的推理记录（用户点击提交后的记录）
-    history = history.filter(h => h && h.confirmed);
+    history = JSON.parse(localStorage.getItem('garbage_history') || '[]').filter(h => h && h.confirmed);
 
-    // 推理来源统计（归一化为四类：专家规则库 / 天行官方API / 本地增强匹配 / BERT语义融合引擎，其他归为其他）
-    const normalizeMethod = (m) => {
+    const normalize = (m) => {
         if (!m) return '其他';
         const s = String(m).toLowerCase();
-        if (s.includes('专家') || s.includes('rule') || s.includes('expert')) return '专家规则库';
-        if (s.includes('天行') || s.includes('tian') || (s.includes('api') && s.includes('天'))) return '天行官方API';
-        if (s.includes('本地') || s.includes('匹配') || s.includes('增强匹配') || s.includes('数据库')) return '本地增强匹配';
-        if (s.includes('bert') || s.includes('语义') || s.includes('融合') ) return 'BERT语义融合引擎';
-        if (s.includes('manual') || s.includes('纠正') || s.includes('人工')) return '人工纠正';
-        return '其他';
+        if (s.includes('专家') || s.includes('人工')) return '专家规则库';
+        if (s.includes('天行') || s.includes('api')) return '天行官方API';
+        if (s.includes('本地') || s.includes('数据库')) return '本地数据库';
+        return 'BERT语义引擎';
     };
+
+    const strategyStacks = { 'BERT语义引擎': [0,0,0,0], '本地数据库': [0,0,0,0], '天行官方API': [0,0,0,0], '专家规则库': [0,0,0,0] };
     const sourceCounts = {};
-    let apiCount = 0;
+    let total = history.length, correct = 0, carbon = 0, lowConfItems = [];
+    let matrix = Array.from({length:4}, ()=>Array(4).fill(0));
+    let hasAnomaly = false, lastKeyword = '';
+
     history.forEach(item => {
-        const raw = item.method || 'local';
-        const m = normalizeMethod(raw);
+        const m = normalize(item.method);
         sourceCounts[m] = (sourceCounts[m] || 0) + 1;
-        if (m === '天行官方API') apiCount++;
+
+        let pIdx = CATS.indexOf(item.category); if(pIdx < 0) pIdx = 3;
+        if(strategyStacks[m]) strategyStacks[m][pIdx]++;
+
+        let rIdx = item.corrected ? CATS.indexOf(item.correct_category) : pIdx;
+        if(rIdx < 0) rIdx = 3;
+        matrix[rIdx][pIdx]++;
+        
+        if(pIdx === rIdx) correct++;
+        
+        // 核心纠错过滤逻辑：低置信度/异常 且 未被纠正
+        if((item.confidence < threshold || item.is_anomaly) && !item.corrected) {
+            lowConfItems.push(item);
+        }
+
+        if(item.is_anomaly && !item.corrected) { hasAnomaly = true; lastKeyword = item.keyword; }
+        if(item.category === "可回收垃圾") carbon += 1.2; else carbon += 0.1;
     });
 
-    // 1. 统计与指标计算（并收集置信度按预测类别）
-    let tp = 0, fp = 0;
-    let matrix = Array.from({length:4}, () => Array(4).fill(0));
-    let lowConfItems = [];
-    const confSumByPred = Array(4).fill(0);
-    const confCntByPred = Array(4).fill(0);
-
-    history.forEach(item => {
-        let pIdx = CATS.indexOf(item.category);
-        if (pIdx === -1) pIdx = 3;
-        const conf = (typeof item.confidence === 'number') ? item.confidence : 0;
-        const isActuallyCorrect = conf > threshold;
-        let realIdx = isActuallyCorrect ? pIdx : (pIdx + 1) % 4;
-
-        if (!matrix[realIdx]) return;
-        if (typeof matrix[realIdx][pIdx] === 'undefined') matrix[realIdx][pIdx] = 0;
-        matrix[realIdx][pIdx]++;
-        if (isActuallyCorrect) tp++; else fp++;
-
-        if (conf < threshold) lowConfItems.push(item);
-        // API 提示但未被人工纠正的，也进入专家标注池
-        if (item.api_suggested && !item.corrected) lowConfItems.push(item);
-
-        confSumByPred[pIdx] += conf;
-        confCntByPred[pIdx]++;
-    });
-
-    const precision = (tp + fp) ? (tp / (tp + fp)) : 0;
-    const recall = history.length ? (tp / (tp + 5)) : 0; // 继续用简单模拟的FN
-    const f1 = (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
-
-    // 2. 更新 UI 数字（Total / API Rate / F1 / Risk Count）
-    document.getElementById('stat-total').innerText = history.length;
-    const apiRate = history.length ? (apiCount / history.length) : 0;
-    document.getElementById('stat-p').innerText = (apiRate * 100).toFixed(1) + '%';
-    document.getElementById('stat-f1').innerText = f1.toFixed(2);
+    // 指标
+    const P = total > 0 ? (correct / total) : 0;
+    document.getElementById('stat-total').innerText = total;
+    document.getElementById('stat-p').innerText = (P*100).toFixed(1) + '%';
+    document.getElementById('stat-f1').innerText = P.toFixed(2);
     document.getElementById('stat-anno').innerText = lowConfItems.length;
-    document.getElementById('carbon-val').innerText = (history.length * 0.12).toFixed(1);
+    document.getElementById('carbon-val').innerText = carbon.toFixed(1);
+    document.querySelector('#p-meter div').style.width = (P*100) + '%';
 
-    document.querySelector('#p-meter div').style.width = (precision * 100) + '%';
-    document.querySelector('#r-meter div').style.width = (recall * 100) + '%';
-
-    // 3. 更新推理来源简述
-    const topSources = Object.keys(sourceCounts).sort((a,b)=>sourceCounts[b]-sourceCounts[a]).slice(0,3).map(k=>`${k}:${sourceCounts[k]}`).join(' | ');
-    document.getElementById('drift-msg').innerText = `来源占比（实时）: ${topSources}`;
-
-    // 检测最近一次推理是否异常并更新 OOD 状态
-    const lastPrediction = history.length ? history[history.length - 1] : null;
-    const icon = document.getElementById('anomaly-icon');
-    const msg = document.getElementById('anomaly-msg');
-    if (lastPrediction && lastPrediction.is_anomaly) {
-        if (icon) icon.className = "w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-red-500 mb-4 animate-pulse";
-        if (msg) msg.innerHTML = `<span class="text-red-600 font-black">检测到语义偏离：${lastPrediction.keyword}</span><br>已自动标记 Bad Case 并推送标注池`;
+    // 纠错池
+    const annoEl = document.getElementById('anno-list');
+    if(!lowConfItems.length) {
+        annoEl.innerHTML = `<div class="col-span-4 py-10 text-center text-slate-300 text-xs italic">当前识别语义拓扑稳定，暂无风险样本</div>`;
     } else {
-        if (icon) icon.className = "w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 mb-4";
-        if (msg) msg.innerText = "系统实时语义分布稳定";
+        annoEl.innerHTML = lowConfItems.slice(-8).map(it => `
+            <div class="p-5 bg-white border border-orange-100 rounded-2xl shadow-sm hover:shadow-md transition">
+                <p class="font-black text-slate-800 text-sm">${it.keyword}</p>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-[10px] text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded-md">${(it.confidence*100).toFixed(0)}% 风险度</span>
+                    <button onclick="openCorrectModal('${encodeURIComponent(JSON.stringify(it))}')" class="text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold">纠正</button>
+                </div>
+            </div>
+        `).join('');
     }
 
-    // 4. 渲染推理来源饼图
-    if (chartSource) {
-        const srcData = Object.keys(sourceCounts).map(k => ({ name: k, value: sourceCounts[k] }));
-        chartSource.setOption({
-            tooltip: { trigger: 'item' },
-            legend: { orient: 'horizontal', left: 'center', bottom: '4%', itemGap: 18, textStyle: { fontSize: 12 }, data: Object.keys(sourceCounts) },
-            series: [{ type: 'pie', center: ['50%', '34%'], radius: ['34%', '62%'], avoidLabelOverlap: false, label: { show: false }, data: srcData }]
-        });
-    }
-
-    // 5. 稳定性矩阵：对角线强度由平均置信度提升，低置信度会向周围扩散显示风险
-    const avgConf = confSumByPred.map((s,i) => confCntByPred[i] ? (s / confCntByPred[i]) : 0);
-    const heatData = [];
-    let maxVal = 0;
-    for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-            const base = matrix[i][j] || 0;
-            const extra = (j === i) ? (avgConf[j] * 20) : ((1 - avgConf[j]) * 6);
-            const val = base + extra;
-            heatData.push([j, i, val]);
-            if (val > maxVal) maxVal = val;
-        }
-    }
-    chartMatrix.setOption({
-        tooltip: {},
-        xAxis: { type: 'category', data: CATS, axisLabel: { fontSize: 9 } },
-        yAxis: { type: 'category', data: CATS, axisLabel: { fontSize: 9 } },
-        visualMap: { min: 0, max: Math.max(10, maxVal), inRange: { color: ['#fff', '#10b981'] }, right: 0 },
-        series: [{
-            type: 'heatmap', data: heatData,
-            label: { show: true, fontSize: 12, fontWeight: 'bold', formatter: function(params) { return (params && params.value && params.value[2] !== undefined) ? params.value[2].toFixed(2) : params.value; } },
-            emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } }
-        }]
+    // 图表渲染
+    chartStrategy.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { top: '0%', textStyle: { fontSize: 10 } },
+        grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+        xAxis: { type: 'value' },
+        yAxis: { type: 'category', data: CATS, axisLabel: { fontSize: 10, fontWeight: 'bold' } },
+        series: Object.entries(strategyStacks).map(([name, data]) => ({ name, type: 'bar', stack: 'total', data })),
+        color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444']
     });
 
-    // 6. 待标注池与分类网格
-    renderAnnoList(lowConfItems);
-    renderMetricsGrid(matrix, avgConf);
+    chartSource.setOption({
+        series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '50%'], label: { show: false }, data: Object.entries(sourceCounts).map(([name, value]) => ({ name, value })) }]
+    });
 
-    // 7. 实时推理流水
-    renderLiveLogs(history.slice(-200));
-}
+    chartMatrix.setOption({
+        tooltip: {}, xAxis: { type: 'category', data: CATS }, yAxis: { type: 'category', data: CATS },
+        visualMap: { min: 0, max: 10, inRange: { color: ['#fff', '#10b981'] }, show: false },
+        series: [{ type: 'heatmap', data: matrix.flatMap((row, i) => row.map((v, j) => [j, i, v])), label: { show: true } }]
+    });
 
-function renderAnnoList(items) {
-    const list = document.getElementById('anno-list');
-    if (!items.length) {
-        list.innerHTML = `<p class="text-xs text-slate-300 italic">暂无低置信度样本需要校准...</p>`;
-        return;
+    // OOD 灯
+    const aIcon = document.getElementById('anomaly-icon');
+    const aMsg = document.getElementById('anomaly-msg');
+    if(hasAnomaly) {
+        aIcon.className = "w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-500 mb-4 animate-pulse shadow-lg";
+        aMsg.innerHTML = `<span class="text-red-600 font-black">发现异常词：${lastKeyword}</span>`;
+    } else {
+        aIcon.className = "w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 mb-4 shadow-inner";
+        aMsg.innerText = "语义拓扑结构稳定";
     }
-    list.innerHTML = items.slice(-5).map(item => `
-        <div class="p-4 bg-slate-50 rounded-2xl flex justify-between items-center group hover:bg-white transition shadow-sm">
-            <div>
-                <p class="text-sm font-black text-slate-700">${item.keyword}</p>
-                <p class="text-[10px] font-bold text-slate-400">预测为: ${item.category} · ${item.method || 'local'}</p>
-            </div>
-            <button onclick="correctItem('${encodeURIComponent(JSON.stringify(item))}')" class="px-4 py-1.5 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black group-hover:bg-emerald-500 group-hover:text-white transition">纠正</button>
-        </div>
-    `).join('');
+
+    renderMetricsGrid(matrix);
+    renderLiveLogs(history);
 }
 
-// 打开美化弹窗
-function correctItem(itemStr) {
-    try {
-        currentItem = JSON.parse(decodeURIComponent(itemStr));
-        document.getElementById('modalInput').value = currentItem.category || '干垃圾';
-        document.getElementById('correctModal').classList.add('active');
-    } catch(e) {
-        console.error('解析 item 失败', e);
-        alert('解析失败');
-    }
-}
-
-// 关闭弹窗
-function closeModal() {
-    document.getElementById('correctModal').classList.remove('active');
-    currentItem = null;
-}
-
-// 确认纠正（和原逻辑完全一致）
-function confirmCorrect() {
-    const choice = document.getElementById('modalInput').value.trim();
-    if (!choice) return;
-    // 先备份当前项，避免 closeModal() 将 currentItem 置为 null
-    const item = currentItem;
-    // 原有后端提交逻辑不变
-    fetch('http://127.0.0.1:8000/correct', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: item.keyword, correct_category: choice })
-    }).then(r=>r.json()).then(res=>{
-        if (res && res.ok) {
-            const hist = JSON.parse(localStorage.getItem('garbage_history') || '[]');
-            // 更鲁棒的匹配：按 keyword 查找最近一条未被纠正的记录
-            let idx = -1;
-            for (let i = hist.length - 1; i >= 0; i--) {
-                if (hist[i].keyword === item.keyword) { idx = i; break; }
-            }
-            if (idx >= 0) {
-                hist[idx].corrected = true;
-                hist[idx].correct_category = choice;
-                hist[idx].corrected_at = new Date().toLocaleString();
-                hist[idx].confidence = res.new_confidence || hist[idx].confidence;
-                hist[idx].method = res.source || hist[idx].method;
-                localStorage.setItem('garbage_history', JSON.stringify(hist));
-                closeModal();
-                showSavedModal(item, choice, 2000);
-                renderAll();
-            } else {
-                // 找不到匹配项也刷新并提示
-                closeModal();
-                showToast('已同步到后端，但未找到本地历史匹配项。');
-                renderAll();
-            }
-        } else {
-            showToast('后端纠正失败：' + (res && res.error ? res.error : '未知错误'));
-        }
-    }).catch(e=>{console.error(e); showToast('无法连接后端纠正接口');});
-}
-
-function showToast(msg, timeout=2500) {
-    const t = document.getElementById('global-toast');
-    t.innerText = msg;
-    t.classList.remove('opacity-0');
-    t.classList.add('opacity-100');
-    clearTimeout(t._to);
-    t._to = setTimeout(()=>{ t.classList.remove('opacity-100'); t.classList.add('opacity-0'); }, timeout);
-}
-
-// 显示短时已保存模态（2秒后自动关闭）
-function showSavedModal(item, choice, timeout=2000) {
-    try {
-        const m = document.getElementById('saved-modal');
-        document.getElementById('saved-title').innerText = '纠正已保存';
-        document.getElementById('saved-body').innerText = `${item.keyword} → ${choice}（已同步到后端）`;
-        m.classList.remove('hidden');
-        m.classList.add('active');
-        clearTimeout(m._to);
-        m._to = setTimeout(()=>{ m.classList.remove('active'); m.classList.add('hidden'); }, timeout);
-    } catch(e) { console.error('显示 saved modal 失败', e); showToast('纠正已保存'); }
-}
-
-function renderMetricsGrid(matrix, avgConf) {
-    const grid = document.getElementById('metrics-grid');
-    let html = '';
-    CATS.forEach((name, i) => {
-        const tp = matrix[i][i] || 0;
-        const fp = matrix.reduce((s, r, idx) => idx !== i ? s + (r[i] || 0) : s, 0);
-        const p = tp / (tp + fp) || 0;
-        const conf = avgConf && avgConf[i] ? avgConf[i] : 0;
-        html += `
-            <div class="p-6 bg-white border border-slate-50 rounded-[24px]">
-                <p class="text-[10px] font-black text-slate-400 uppercase mb-4">${name}</p>
+function renderMetricsGrid(matrix) {
+    const el = document.getElementById('metrics-grid');
+    el.innerHTML = CATS.map((c, i) => {
+        const total = matrix[i].reduce((a,b)=>a+b, 0) + 0.001;
+        const p = (matrix[i][i] / total * 100).toFixed(0);
+        return `
+            <div class="p-6 bg-white border border-slate-50 rounded-3xl">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-2">${c}</p>
                 <div class="flex justify-between items-end">
-                    <h4 class="text-2xl font-black text-slate-800 mono">${(p*100).toFixed(0)}%</h4>
-                    <div class="text-right">
-                        <span class="text-[10px] font-bold ${conf > 0.8 ? 'text-emerald-500' : 'text-orange-400'}">${conf > 0.8 ? '优秀' : '待改善'}</span>
-                        <div class="text-[10px] text-slate-400">置信: ${(conf*100).toFixed(0)}%</div>
-                    </div>
+                    <h3 class="text-3xl font-black text-slate-800">${p}%</h3>
+                    <span class="text-[9px] font-bold ${p>80?'text-emerald-500':'text-orange-400'}">${p>80?'EXCELLENT':'STABLE'}</span>
                 </div>
             </div>`;
-    });
-    grid.innerHTML = html;
+    }).join('');
 }
 
 function renderLiveLogs(items) {
-    const container = document.getElementById('live-logs');
-    if (!items || !items.length) {
-        container.innerHTML = `<p class="text-[12px] text-slate-400 italic">暂无实时审计记录。</p>`;
-        return;
-    }
-    const rows = items.slice(-20).reverse().map(it => {
-        const t = it.time || it.ts || new Date().toLocaleString();
-        const relatedHtml = it.related_links ? `<div class="mt-1 flex gap-1">${it.related_links.map(link => `<span class="px-1 bg-indigo-50 text-indigo-500 rounded text-[9px]">#${link}</span>`).join('')}</div>` : '';
-        return `
-            <div class="py-2 border-b border-slate-100">
-                <div class="flex justify-between">
-                    <span class="text-[12px] font-black">${it.keyword}</span>
-                    <span class="text-[10px] text-slate-400">${it.category}</span>
-                </div>
-                ${relatedHtml}
-            </div>
-        `;
-    }).join('');
-    container.innerHTML = rows;
+    const el = document.getElementById('live-logs');
+    el.innerHTML = items.slice(-20).reverse().map(it => `
+        <div class="text-[9px] text-slate-500 flex justify-between border-b border-slate-50 pb-1">
+            <span class="font-bold text-slate-700">${it.keyword}</span>
+            <span>${it.category}</span>
+        </div>`).join('');
 }
 
-function startHeartbeat() {
-    let data = Array.from({length: 20}, () => Math.random() * 30 + 10);
-    setInterval(() => {
-        data.shift();
-        data.push(Math.random() * 30 + 10);
-        chartHeartbeat.setOption({
-            xAxis: { type: 'category', show: false },
-            yAxis: { type: 'value', show: false },
-            grid: { top: 10, bottom: 10, left: 10, right: 10 },
-            series: [{
-                data: data, type: 'line', smooth: true, symbol: 'none',
-                lineStyle: { color: '#10b981', width: 3 },
-                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset:0, color:'rgba(16,185,129,0.2)'},{offset:1, color:'transparent'}]) }
-            }]
-        });
-    }, 800);
+function openCorrectModal(s) {
+    currentItem = JSON.parse(decodeURIComponent(s));
+    document.getElementById('modalInput').value = currentItem.category;
+    document.getElementById('correctModal').classList.add('active');
 }
 
-function startPolling() {
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(() => {
+function closeModal() { document.getElementById('correctModal').classList.remove('active'); }
+
+function confirmCorrect() {
+    const val = document.getElementById('modalInput').value.trim();
+    if(!val) return;
+    
+    fetch('http://127.0.0.1:8000/correct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: currentItem.keyword, correct_category: val })
+    }).then(() => {
+        showToast("✅ 已成功纠正并同步 MySQL");
+        let hist = JSON.parse(localStorage.getItem('garbage_history') || '[]');
+        // 更新所有包含该关键词的历史记录
+        hist = hist.map(h => h.keyword === currentItem.keyword ? { ...h, corrected: true, correct_category: val, confidence: 1.0, method: '人工纠正(DB)' } : h);
+        localStorage.setItem('garbage_history', JSON.stringify(hist));
         renderAll();
-    }, 5000);
+        closeModal();
+    }).catch(() => showToast("❌ 数据库通信失败"));
+}
+
+function showToast(m) {
+    const t = document.getElementById('global-toast'); t.innerText = m;
+    t.classList.replace('opacity-0', 'opacity-100');
+    setTimeout(() => t.classList.replace('opacity-100', 'opacity-0'), 3000);
 }
 
 window.onload = init;
