@@ -2,8 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from email_validator import validate_email, EmailNotValidError
 from datetime import datetime, timedelta
 import re
+import json
 from app.models import db, User, VerificationCode, Feedback, GarbageCategory, get_china_time
 from app.utils import send_email
+import numpy as np
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -396,12 +398,26 @@ def admin_analytics():
         return redirect(url_for('auth.admin_login'))
     return render_template('admin_analytics.html')
 
+@auth_bp.route('/analytics_dashboard')
+def analytics_dashboard():
+    """智能运维诊断中心"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('auth.admin_login'))
+    return render_template('AnalyticsDashboard.html')
+
 @auth_bp.route('/feedback')
 def feedback():
     """反馈与主动学习工作台"""
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     return render_template('feedback.html')
+
+@auth_bp.route('/game_station')
+def game_station():
+    """分类挑战游戏页面"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('GameStation.html')
 
 @auth_bp.route('/deployment')
 def deployment():
@@ -846,15 +862,18 @@ def process_feedback(id):
         return jsonify({'success': False, 'message': '无权限访问'})
     
     status = request.form.get('status', '').strip()
+    garbage_name = request.form.get('garbage_name', '').strip()
+    
     if status not in ['processed', 'ignored']:
         return jsonify({'success': False, 'message': '无效的状态'})
     
-    # 从数据库获取反馈
     feedback = Feedback.query.get(id)
     if not feedback:
         return jsonify({'success': False, 'message': '反馈不存在'})
     
-    # 如果状态为已处理，且有图片，则复制图片
+    if garbage_name:
+        feedback.garbage_name = garbage_name
+    
     if status == 'processed' and feedback.image_path:
         import os
         import shutil
@@ -892,10 +911,11 @@ def process_feedback(id):
     # 更新反馈状态
     feedback.status = status
     
-    # 更新关联的识别记录的is_correct字段
     from app.models import RecognitionRecord
     record = RecognitionRecord.query.filter_by(feedback_id=feedback.id).first()
     if record:
+        if garbage_name:
+            record.garbage_name = garbage_name
         if status == 'processed':
             record.is_correct = False
         elif status == 'ignored':
@@ -1140,6 +1160,58 @@ def get_analytics_stats():
     })
 
 
+@auth_bp.route('/api/analytics/preview')
+def preview_analytics_data():
+    """预览导出数据"""
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'success': False, 'message': '无权限访问'})
+    
+    from app.models import RecognitionRecord
+    
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    fields = request.args.get('fields', 'id,garbage_name,predicted_category,actual_category,confidence,is_correct,created_at').split(',')
+    
+    query = RecognitionRecord.query
+    
+    if start_date:
+        query = query.filter(RecognitionRecord.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(RecognitionRecord.created_at < datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+    
+    records = query.order_by(RecognitionRecord.created_at.desc()).limit(100).all()
+    
+    data = []
+    for record in records:
+        row = {}
+        if 'id' in fields:
+            row['id'] = record.id
+        if 'garbage_name' in fields:
+            row['garbage_name'] = record.garbage_name or '-'
+        if 'predicted_category' in fields:
+            row['predicted_category'] = record.predicted_category.name if record.predicted_category else '-'
+        if 'actual_category' in fields:
+            row['actual_category'] = record.actual_category.name if record.actual_category else '-'
+        if 'confidence' in fields:
+            row['confidence'] = f"{record.confidence * 100:.1f}%" if record.confidence else '-'
+        if 'is_correct' in fields:
+            if record.is_correct == True:
+                row['is_correct'] = '正确'
+            elif record.is_correct == False:
+                row['is_correct'] = '错误'
+            else:
+                row['is_correct'] = '未知'
+        if 'created_at' in fields:
+            row['created_at'] = record.created_at.strftime('%Y-%m-%d %H:%M:%S') if record.created_at else '-'
+        data.append(row)
+    
+    return jsonify({
+        'success': True,
+        'data': data,
+        'total': query.count()
+    })
+
+
 @auth_bp.route('/api/analytics/export')
 def export_analytics_data():
     """导出数据为Excel"""
@@ -1215,3 +1287,340 @@ def export_analytics_data():
     )
 
 
+@auth_bp.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """AI 对话接口"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    user_message = request.form.get('message', '').strip()
+    context_str = request.form.get('context', '{}')
+    image_file = request.files.get('image')
+    
+    try:
+        context = json.loads(context_str) if context_str else {}
+    except:
+        context = {}
+    
+    if not user_message:
+        return jsonify({'success': False, 'message': '请输入问题'})
+    
+    try:
+        import requests
+        import base64
+        from flask import current_app
+        
+        system_prompt = """你是一个专业的垃圾分类助手。你的任务是帮助用户了解垃圾分类知识，回答相关问题。
+
+垃圾分类类别：
+1. 厨余垃圾（绿色）：剩菜剩饭、果皮果核、茶叶渣、过期食品等
+2. 可回收物（蓝色）：纸类、塑料、玻璃、金属、织物等
+3. 有害垃圾（红色）：电池、灯管、药品、油漆桶等
+4. 其他垃圾（灰色）：卫生纸、烟蒂、陶瓷碎片、一次性餐具等
+
+请用简洁友好的语气回答用户问题，提供准确的垃圾分类建议。如果用户提供了图片，请仔细观察图片内容，判断图片中的物品属于哪种垃圾分类。"""
+        
+        if image_file:
+            image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            image_url = f"data:image/jpeg;base64,{image_data}"
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_url}
+                        },
+                        {
+                            "type": "text",
+                            "text": user_message
+                        }
+                    ]
+                }
+            ]
+            
+            api_url = current_app.config['GLM_API_URL']
+            api_key = current_app.config['GLM_API_KEY']
+            model = current_app.config['GLM_VISION_MODEL']
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt}
+            ]
+            
+            if context.get('category'):
+                messages.append({
+                    "role": "user",
+                    "content": f"用户刚刚识别了一张图片，识别结果为：{context.get('category')}，置信度：{context.get('confidence', '未知')}。请简要介绍这个分类。"
+                })
+                messages.append({
+                    "role": "assistant",
+                    "content": f"识别结果显示这是「{context.get('category')}」。我来为您介绍一下这类垃圾的处理方式。"
+                })
+            
+            messages.append({"role": "user", "content": user_message})
+            
+            api_url = current_app.config['DEEPSEEK_API_URL']
+            api_key = current_app.config['DEEPSEEK_API_KEY']
+            model = 'deepseek-chat'
+        
+        response = requests.post(
+            api_url,
+            headers={
+                'Authorization': f"Bearer {api_key}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': model,
+                'messages': messages,
+                'max_tokens': 1000,
+                'temperature': 0.7
+            },
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            ai_response = result['choices'][0]['message']['content']
+            return jsonify({
+                'success': True,
+                'response': ai_response
+            })
+        else:
+            print(f'AI API 错误: {response.status_code} - {response.text}')
+            return jsonify({
+                'success': False,
+                'message': f'AI 服务暂时不可用，请稍后重试'
+            })
+            
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'message': '请求超时，请稍后重试'})
+    except Exception as e:
+        print(f'AI 对话错误: {e}')
+        return jsonify({'success': False, 'message': '服务异常，请稍后重试'})
+
+
+@auth_bp.route('/api/ai/recognize-garbage', methods=['POST'])
+def ai_recognize_garbage():
+    """AI 识别垃圾名称接口"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': '请先登录'})
+    
+    image_file = request.files.get('image')
+    
+    if not image_file:
+        return jsonify({'success': False, 'message': '请上传图片'})
+    
+    try:
+        import requests
+        import base64
+        from flask import current_app
+        
+        image_data = base64.b64encode(image_file.read()).decode('utf-8')
+        image_url = f"data:image/jpeg;base64,{image_data}"
+        
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url}
+                    },
+                    {
+                        "type": "text",
+                        "text": "请识别图片中的物品，并告诉我这是什么垃圾？只需要返回物品名称，不要返回其他内容。例如：苹果核、塑料瓶、电池等。"
+                    }
+                ]
+            }
+        ]
+        
+        response = requests.post(
+            current_app.config['GLM_API_URL'],
+            headers={
+                'Authorization': f"Bearer {current_app.config['GLM_API_KEY']}",
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': current_app.config['GLM_VISION_MODEL'],
+                'messages': messages,
+                'max_tokens': 50,
+                'temperature': 0.3
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            garbage_name = result['choices'][0]['message']['content'].strip()
+            
+            garbage_name = garbage_name.replace('这是', '').replace('这是,', '').replace('。', '').strip()
+            
+            return jsonify({
+                'success': True,
+                'garbage_name': garbage_name
+            })
+        else:
+            print(f'AI 识别错误: {response.status_code} - {response.text}')
+            return jsonify({
+                'success': False,
+                'message': 'AI 识别失败'
+            })
+            
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'message': '请求超时，请稍后重试'})
+    except Exception as e:
+        print(f'AI 识别垃圾名称错误: {e}')
+        return jsonify({'success': False, 'message': '服务异常，请稍后重试'})
+
+
+@auth_bp.route('/api/predict', methods=['POST'])
+def api_predict():
+    """垃圾分类预测接口"""
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    
+    if not name:
+        return jsonify({'category': '未知', 'confidence': 0})
+    
+    from flask import current_app
+    from app.ai_service import predict_garbage
+    
+    tian_api_key = current_app.config.get('TIAN_API_KEY')
+    result = predict_garbage(name, db, tian_api_key)
+    return jsonify(result)
+
+
+@auth_bp.route('/api/predict_flow', methods=['GET'])
+def api_predict_flow():
+    """预测24小时垃圾投放量"""
+    from app.ai_service import predict_flow
+    return jsonify(predict_flow())
+
+
+@auth_bp.route('/api/game_items', methods=['GET'])
+def api_game_items():
+    """获取游戏题库"""
+    try:
+        from app.models import GarbageItem
+        items = GarbageItem.query.order_by(db.func.rand()).limit(150).all()
+        return jsonify([{"name": item.name, "label": item.label} for item in items])
+    except:
+        return jsonify([
+            {"name": "塑料瓶", "label": 1},
+            {"name": "电池", "label": 2},
+            {"name": "苹果核", "label": 4},
+            {"name": "卫生纸", "label": 8}
+        ])
+
+
+@auth_bp.route('/api/log_game_mistake', methods=['POST'])
+def api_log_game_mistake():
+    """记录游戏错题"""
+    data = request.get_json()
+    name = data.get('name', '')
+    wrong_label = data.get('wrong_label', 0)
+    correct_label = data.get('correct_label', 0)
+    
+    try:
+        from app.models import GameMistakesStat
+        stat = GameMistakesStat.query.filter_by(
+            item_name=name,
+            correct_label=correct_label,
+            wrong_label=wrong_label
+        ).first()
+        
+        if stat:
+            stat.occurrence_count += 1
+        else:
+            stat = GameMistakesStat(
+                item_name=name,
+                correct_label=correct_label,
+                wrong_label=wrong_label,
+                occurrence_count=1
+            )
+            db.session.add(stat)
+        
+        db.session.commit()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
+@auth_bp.route('/api/get_mistake_rank', methods=['GET'])
+def api_get_mistake_rank():
+    """获取错题排行榜"""
+    try:
+        from app.models import GameMistakesStat
+        stats = GameMistakesStat.query.order_by(GameMistakesStat.occurrence_count.desc()).limit(10).all()
+        return jsonify([{
+            "name": s.item_name,
+            "wrong": s.wrong_label,
+            "count": s.occurrence_count
+        } for s in stats])
+    except:
+        return jsonify([])
+
+
+@auth_bp.route('/api/get_ai_analysis', methods=['POST'])
+def api_get_ai_analysis():
+    """AI 游戏诊断分析"""
+    data = request.get_json()
+    score = data.get('score', 0)
+    accuracy = data.get('accuracy', '0%')
+    mistakes = data.get('mistakes', [])
+    
+    from flask import current_app
+    from app.ai_service import get_ai_game_analysis
+    
+    zhipu_api_key = current_app.config.get('ZHIPU_API_KEY')
+    result = get_ai_game_analysis(score, accuracy, mistakes, zhipu_api_key)
+    return jsonify(result)
+
+
+@auth_bp.route('/api/correct', methods=['POST'])
+def api_correct():
+    """人工纠正分类"""
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    correct_category = data.get('correct_category', '')
+    
+    if not name or not correct_category:
+        return jsonify({'ok': False, 'error': '参数错误'})
+    
+    from app.ai_service import LABEL_MAP_REVERSE
+    label = LABEL_MAP_REVERSE.get(correct_category)
+    
+    if not label:
+        return jsonify({'ok': False, 'error': '分类错误'})
+    
+    try:
+        from app.models import GarbageItem
+        item = GarbageItem.query.filter_by(name=name).first()
+        
+        if item:
+            item.label = label
+        else:
+            item = GarbageItem(name=name, label=label, synonyms=json.dumps([name], ensure_ascii=False))
+            db.session.add(item)
+        
+        db.session.commit()
+        return jsonify({'ok': True, 'source': '人工纠正', 'new_confidence': 1.0})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
+
+@auth_bp.route("/api/draw_card", methods=['GET'])
+async def draw_card():
+    """随机抽取一张环保生物卡片（图片版）"""
+    cards = [
+        {"name": "大熊猫", "rarity": "UR", "img": "/static/background/panda.jpg", "desc": "由于你的努力，森林覆盖率提升，它们不再孤独。"},
+        {"name": "华南虎", "rarity": "SSR", "img": "/static/background/tiger.jpg", "desc": "森林之王！你的分类行为保护了原始生物链。"},
+        {"name": "极地企鹅", "rarity": "SSR", "img": "/static/background/penguin.jpg", "desc": "减碳行为让海平面上升速度放缓。"},
+        {"name": "长江江豚", "rarity": "SR", "img": "/static/background/dolphin.jpg", "desc": "微笑天使！水质改善让它们重新跃动。"},
+        {"name": "绿孔雀", "rarity": "SR", "img": "/static/background/peacock.jpg", "desc": "雨林之光！生物多样性得到了保护。"},
+        {"name": "环保卫士", "rarity": "N", "img": "/static/background/hero.jpg", "desc": "平凡的坚持，也是改变地球的力量。"}
+    ]
+    weights = [0.05, 0.15, 0.15, 0.15, 0.15, 0.35]
+    idx = np.random.choice(len(cards), p=weights)
+    return cards[idx]
