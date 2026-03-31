@@ -499,6 +499,24 @@
             color: var(--primary);
         }
         
+        .edit-input {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color var(--transition);
+        }
+        
+        .edit-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+        }
+        
         .detail-note {
             padding: 16px;
             background: var(--bg-muted);
@@ -740,6 +758,11 @@
             <li>
                 <a href="{{ url_for('auth.admin_analytics') }}">
                     <span>📊</span> 数据统计
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.analytics_dashboard') }}">
+                    <span>✨</span> 智能运维
                 </a>
             </li>
             <li>
@@ -1036,7 +1059,7 @@ function renderFeedbackDetails(feedback) {
                 </div>
                 <div class="detail-item">
                     <label>垃圾名称</label>
-                    <span>${feedback.garbageName}</span>
+                    <input type="text" id="garbage-name-input" class="edit-input" value="${feedback.garbageName}" />
                 </div>
                 <div class="detail-item">
                     <label>提交时间</label>
@@ -1080,12 +1103,21 @@ function renderFeedbackDetails(feedback) {
 }
 
 function processFeedback(feedbackId) {
+    const garbageNameInput = document.getElementById('garbage-name-input');
+    const garbageName = garbageNameInput ? garbageNameInput.value.trim() : '';
+    
+    const body = new URLSearchParams();
+    body.append('status', 'processed');
+    if (garbageName) {
+        body.append('garbage_name', garbageName);
+    }
+    
     fetch(`/api/feedback/process/${feedbackId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: 'status=processed'
+        body: body.toString()
     })
         .then(response => response.json())
         .then(data => {
@@ -1106,12 +1138,21 @@ function processFeedback(feedbackId) {
 }
 
 function ignoreFeedback(feedbackId) {
+    const garbageNameInput = document.getElementById('garbage-name-input');
+    const garbageName = garbageNameInput ? garbageNameInput.value.trim() : '';
+    
+    const body = new URLSearchParams();
+    body.append('status', 'ignored');
+    if (garbageName) {
+        body.append('garbage_name', garbageName);
+    }
+    
     fetch(`/api/feedback/process/${feedbackId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: 'status=ignored'
+        body: body.toString()
     })
         .then(response => response.json())
         .then(data => {

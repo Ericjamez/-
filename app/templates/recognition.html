@@ -561,66 +561,67 @@
             border: 1px solid #FECACA;
         }
         
-        .footer {
-            background: white;
-            padding: 40px 0 20px;
-            box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-        }
-        
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-        
-        .footer-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-        
-        .footer-column {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .footer-column h3 {
-            color: var(--primary-dark);
-            margin-bottom: 20px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .footer-links {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .footer-links li {
-            margin-bottom: 12px;
-        }
-        
-        .footer-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-        
-        .footer-links a:hover {
-            color: var(--primary-dark);
-            transform: translateX(4px);
-        }
-        
-        .footer-copyright {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 14px;
-        }
+    /* 底部信息样式 - 现代简约 */
+    .footer {
+        background: white;
+        padding: 15px 0 10px;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+    
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+    
+    .footer-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        margin-bottom: 5px;
+    }
+    
+    .footer-column {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .footer-column h3 {
+        color: #2E7D32;
+        margin-bottom: 20px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .footer-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .footer-links li {
+        margin-bottom: 12px;
+    }
+    
+    .footer-links a {
+        color: #6c757d;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+    
+    .footer-links a:hover {
+        color: #2E7D32;
+        transform: translateX(4px);
+    }
+    
+    .footer-copyright {
+        text-align: center;
+        padding-top: 5px;
+        border-top: 1px solid #e9ecef;
+        color: #6c757d;
+        font-size: 14px;
+    }
         
         @keyframes float {
             0% { transform: translateY(0); }
@@ -766,12 +767,17 @@
             </li>
             <li>
                 <a href="{{ url_for('auth.knowledge') }}">
-                    <span>🧠</span> 知识图谱
+                    <span>📖</span> 语义识别
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.game_station') }}">
+                    <span>🎮</span> 环保训练
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('auth.deployment') }}">
-                    <span>🚀</span> 部署实验室
+                    <span>🗺️/span> 回收站点
                 </a>
             </li>
             <li>
@@ -994,7 +1000,8 @@
                     <li><a href="{{ url_for('auth.index') }}">首页</a></li>
                     {% if 'user_id' in session %}
                     <li><a href="{{ url_for('auth.recognition') }}">图片识别</a></li>
-                    <li><a href="{{ url_for('auth.knowledge') }}">知识图谱</a></li>
+                    <li><a href="{{ url_for('auth.knowledge') }}">语义识别</a></li>
+                    <li><a href="{{ url_for('auth.game_station') }}">环保训练</a></li>
                     {% else %}
                     <li><a href="{{ url_for('auth.login') }}">登录</a></li>
                     <li><a href="{{ url_for('auth.register') }}">注册</a></li>
@@ -1095,6 +1102,8 @@ document.getElementById('image-upload').addEventListener('change', function(e) {
             document.getElementById('upload-preview').style.display = 'none';
             document.getElementById('image-preview').style.display = 'block';
             document.getElementById('preview-img').src = e.target.result;
+            
+            syncImageToAI(file, e.target.result);
         };
         reader.readAsDataURL(file);
     }
@@ -1135,6 +1144,8 @@ uploadArea.addEventListener('drop', function(e) {
             document.getElementById('upload-preview').style.display = 'none';
             document.getElementById('image-preview').style.display = 'block';
             document.getElementById('preview-img').src = e.target.result;
+            
+            syncImageToAI(file, e.target.result);
         };
         reader.readAsDataURL(file);
     }
@@ -1242,6 +1253,12 @@ function takePhoto() {
             camera.style.display = 'none';
             canvas.style.display = 'block';
             console.log('拍照成功，图片大小:', blob.size, '字节');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                syncImageToAI(selectedImage, e.target.result);
+            };
+            reader.readAsDataURL(selectedImage);
         } else {
             alert('拍照失败，请重试');
         }
@@ -1324,6 +1341,10 @@ async function recognizeImage() {
             }
             
             hasRecognized = true;
+            
+            if (typeof updateAIContext === 'function') {
+                updateAIContext(data.result.category, (data.result.confidence * 100).toFixed(1) + '%');
+            }
         } else {
             alert('识别失败：' + data.message);
         }
@@ -1338,6 +1359,40 @@ async function recognizeImage() {
 
 function feedback() {
     document.getElementById('feedback-modal').style.display = 'flex';
+    
+    if (selectedImage) {
+        autoRecognizeGarbageName();
+    }
+}
+
+function autoRecognizeGarbageName() {
+    const garbageNameInput = document.getElementById('garbage-name');
+    garbageNameInput.value = 'AI 识别中...';
+    garbageNameInput.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+    
+    fetch('/api/ai/recognize-garbage', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        garbageNameInput.disabled = false;
+        if (data.success) {
+            garbageNameInput.value = data.garbage_name;
+        } else {
+            garbageNameInput.value = '';
+            garbageNameInput.placeholder = '请输入垃圾名称';
+        }
+    })
+    .catch(error => {
+        garbageNameInput.disabled = false;
+        garbageNameInput.value = '';
+        garbageNameInput.placeholder = '请输入垃圾名称';
+        console.error('AI 识别失败:', error);
+    });
 }
 
 function closeFeedback() {
@@ -1415,6 +1470,628 @@ document.getElementById('feedback-modal').addEventListener('click', function(e) 
         closeFeedback();
     }
 });
+</script>
+
+<!-- AI 浮窗 -->
+<div id="ai-widget" class="ai-widget">
+    <div id="ai-bubble" class="ai-bubble" onclick="toggleAIWidget()">
+        <span class="ai-icon">🤖</span>
+        <span class="ai-badge" id="ai-badge" style="display: none;">1</span>
+    </div>
+    
+    <div id="ai-panel" class="ai-panel" style="display: none;">
+        <div class="ai-header">
+            <span class="ai-title">🤖 AI 分类助手</span>
+            <div class="ai-header-actions">
+                <button class="ai-minimize" onclick="toggleAIWidget()" title="最小化">−</button>
+            </div>
+        </div>
+        
+        <div class="ai-body" id="ai-messages">
+            <div class="ai-message ai-welcome">
+                <div class="ai-avatar">🤖</div>
+                <div class="ai-content">
+                    <p>您好！我是垃圾分类 AI 助手，可以帮您解答垃圾分类相关问题。</p>
+                    <p>您可以问我：</p>
+                    <ul>
+                        <li>这是什么垃圾？</li>
+                        <li>如何正确投放？</li>
+                        <li>分类后怎么处理？</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ai-quick-questions" id="ai-quick-questions">
+            <button onclick="askQuickQuestion('这是什么垃圾？')">这是什么垃圾？</button>
+            <button onclick="askQuickQuestion('如何正确投放？')">如何正确投放？</button>
+            <button onclick="askQuickQuestion('分类后去哪了？')">分类后去哪了？</button>
+        </div>
+        
+        <div class="ai-input-area">
+            <div class="ai-image-preview" id="ai-image-preview" style="display: none;">
+                <img id="ai-preview-img" src="" alt="预览">
+                <button class="ai-remove-image" onclick="removeAIImage()">×</button>
+            </div>
+            <div class="ai-input-row">
+                <input type="text" id="ai-input" placeholder="输入您的问题..." onkeypress="handleAIKeyPress(event)">
+                <button class="ai-send" onclick="sendAIMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ai-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.ai-bubble {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(22, 163, 74, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.ai-bubble:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 40px rgba(22, 163, 74, 0.4);
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.ai-icon {
+    font-size: 28px;
+}
+
+.ai-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+.ai-panel {
+    position: absolute;
+    bottom: 75px;
+    right: 0;
+    width: 380px;
+    max-height: 520px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.ai-header {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.9) 0%, rgba(21, 128, 61, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ai-title {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+}
+
+.ai-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.ai-minimize {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.ai-minimize:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(1.05);
+}
+
+.ai-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    max-height: 290px;
+    background: transparent;
+}
+
+.ai-message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.ai-avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.9) 0%, rgba(21, 128, 61, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+}
+
+.ai-content {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 14px 16px;
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.ai-content p {
+    margin: 0 0 8px 0;
+}
+
+.ai-content p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-content ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+}
+
+.ai-content li {
+    margin-bottom: 4px;
+    color: #475569;
+}
+
+.ai-user-message {
+    flex-direction: row-reverse;
+}
+
+.ai-user-message .ai-avatar {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.ai-user-message .ai-content {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.85) 0%, rgba(21, 128, 61, 0.85) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    border-radius: 16px;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2);
+}
+
+.ai-quick-questions {
+    padding: 14px 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.ai-quick-questions button {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #475569;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ai-quick-questions button:hover {
+    background: rgba(22, 163, 74, 0.15);
+    color: #16a34a;
+    border-color: rgba(22, 163, 74, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+}
+
+.ai-input-area {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.ai-image-preview {
+    position: relative;
+    display: inline-block;
+    max-width: 100px;
+}
+
+.ai-image-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ai-remove-image {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    transition: transform 0.2s;
+}
+
+.ai-remove-image:hover {
+    transform: scale(1.1);
+}
+
+.ai-input-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+#ai-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+#ai-input:focus {
+    border-color: rgba(22, 163, 74, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.ai-send {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.9) 0%, rgba(21, 128, 61, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+
+.ai-send:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+}
+
+.ai-send:disabled {
+    background: rgba(148, 163, 184, 0.6);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.ai-typing {
+    display: flex;
+    gap: 5px;
+    padding: 8px 0;
+}
+
+.ai-typing span {
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.8) 0%, rgba(21, 128, 61, 0.8) 100%);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.ai-typing span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.ai-typing span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-6px);
+    }
+}
+
+.ai-context-badge {
+    display: inline-block;
+    background: rgba(22, 163, 74, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+    color: #16a34a;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+    .ai-panel {
+        width: calc(100vw - 48px);
+        right: -12px;
+    }
+}
+</style>
+
+<script>
+let aiWidgetOpen = false;
+let aiContext = {};
+let aiCurrentImage = null;
+
+function toggleAIWidget() {
+    const panel = document.getElementById('ai-panel');
+    const bubble = document.getElementById('ai-bubble');
+    
+    if (aiWidgetOpen) {
+        panel.style.display = 'none';
+        aiWidgetOpen = false;
+    } else {
+        panel.style.display = 'flex';
+        aiWidgetOpen = true;
+        document.getElementById('ai-input').focus();
+    }
+}
+
+function handleAIKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendAIMessage();
+    }
+}
+
+function askQuickQuestion(question) {
+    document.getElementById('ai-input').value = question;
+    sendAIMessage();
+}
+
+function removeAIImage() {
+    aiCurrentImage = null;
+    document.getElementById('ai-image-preview').style.display = 'none';
+    document.getElementById('ai-preview-img').src = '';
+}
+
+function sendAIMessage() {
+    const input = document.getElementById('ai-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    const hasImage = aiCurrentImage !== null;
+    
+    if (hasImage) {
+        addAIMessageWithImage(message, true, document.getElementById('ai-preview-img').src);
+    } else {
+        addAIMessage(message, true);
+    }
+    input.value = '';
+    
+    const sendBtn = document.querySelector('.ai-send');
+    sendBtn.disabled = true;
+    
+    showTypingIndicator();
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('context', JSON.stringify(aiContext));
+    
+    if (hasImage) {
+        formData.append('image', aiCurrentImage);
+    }
+    
+    fetch('/api/ai/chat', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideTypingIndicator();
+        sendBtn.disabled = false;
+        
+        if (data.success) {
+            addAIMessage(data.response, false);
+        } else {
+            addAIMessage('抱歉，' + data.message, false);
+        }
+    })
+    .catch(error => {
+        hideTypingIndicator();
+        sendBtn.disabled = false;
+        addAIMessage('抱歉，网络出现问题，请稍后重试。', false);
+        console.error('AI 对话错误:', error);
+    });
+}
+
+function addAIMessage(content, isUser) {
+    const messagesContainer = document.getElementById('ai-messages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-message ${isUser ? 'ai-user-message' : ''}`;
+    
+    messageDiv.innerHTML = `
+        <div class="ai-avatar">${isUser ? '👤' : '🤖'}</div>
+        <div class="ai-content">${content}</div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function addAIMessageWithImage(content, isUser, imageSrc) {
+    const messagesContainer = document.getElementById('ai-messages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-message ${isUser ? 'ai-user-message' : ''}`;
+    
+    messageDiv.innerHTML = `
+        <div class="ai-avatar">${isUser ? '👤' : '🤖'}</div>
+        <div class="ai-content">
+            <img src="${imageSrc}" class="ai-message-image" style="max-width: 100%; border-radius: 8px; margin-bottom: 8px;">
+            <div>${content}</div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function showTypingIndicator() {
+    const messagesContainer = document.getElementById('ai-messages');
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'ai-message';
+    typingDiv.id = 'ai-typing-indicator';
+    
+    typingDiv.innerHTML = `
+        <div class="ai-avatar">🤖</div>
+        <div class="ai-content">
+            <div class="ai-typing">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    messagesContainer.appendChild(typingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const typingIndicator = document.getElementById('ai-typing-indicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
+
+function updateAIContext(category, confidence) {
+    aiContext = {
+        category: category,
+        confidence: confidence
+    };
+    
+    const quickQuestions = document.getElementById('ai-quick-questions');
+    quickQuestions.innerHTML = `
+        <button onclick="askQuickQuestion('${category}是什么垃圾？')">${category}是什么垃圾？</button>
+        <button onclick="askQuickQuestion('${category}如何正确投放？')">${category}如何正确投放？</button>
+        <button onclick="askQuickQuestion('${category}分类后去哪了？')">${category}分类后去哪了？</button>
+    `;
+    
+    const badge = document.getElementById('ai-badge');
+    badge.style.display = 'flex';
+}
+
+function syncImageToAI(file, dataUrl) {
+    aiCurrentImage = file;
+    document.getElementById('ai-image-preview').style.display = 'block';
+    document.getElementById('ai-preview-img').src = dataUrl;
+}
+
+function clearAIImage() {
+    aiCurrentImage = null;
+    document.getElementById('ai-image-preview').style.display = 'none';
+    document.getElementById('ai-preview-img').src = '';
+}
 </script>
 </body>
 </html>
