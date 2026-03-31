@@ -11,6 +11,7 @@
 ### 用户认证模块
 
 #### F001 - 用户注册
+
 - 用户可通过用户名、密码、手机号/邮箱完成注册
 - 支持手机号和邮箱两种联系方式注册
 - 实现手机号/邮箱验证码验证
@@ -18,17 +19,20 @@
 - 账号唯一性校验
 
 #### F002 - 用户登录
+
 - 支持用户名或邮箱登录
 - 搭配数字图形验证码，保障账号安全
 - 密码使用 SHA256 加密存储
 - 安全机制：连续输错5次密码，锁定账号10分钟防刷
 
 #### F003 - 管理员登录
+
 - 管理员使用专属账号密码登录后台
 - 登录后可访问管理员专属功能
 - 管理员账号仅通过数据库后台添加，不开放页面注册
 
 #### F004 - 密码找回
+
 - 普通用户通过注册时的邮箱接收验证码
 - 验证通过后可重置登录密码
 - 仅支持普通用户自主找回
@@ -36,6 +40,7 @@
 ### 核心功能模块
 
 #### F005 - 图片识别
+
 - 支持上传图片识别和相机拍照识别两种方式
 - 基于 PyTorch 深度学习模型进行垃圾分类
 - 识别结果包含：垃圾分类、置信度、识别时间
@@ -44,12 +49,14 @@
 - 集成 AI 智能助手浮窗，支持图片问答
 
 #### F006 - 垃圾分类知识库
+
 - 展示四大类垃圾知识：厨余垃圾、可回收物、有害垃圾、其他垃圾
 - 提供详细的分类指南和投放建议
 - 支持搜索和筛选功能
 - 环保小科普内容展示
 
 #### F007 - 反馈管理
+
 - 用户可提交识别错误的反馈
 - 管理员可查看和处理用户反馈
 - 支持标记为已处理，自动将图片移入训练数据集
@@ -58,6 +65,7 @@
 - 管理员可修改垃圾名称
 
 #### F008 - 数据统计
+
 - 识别记录统计（总数、正确识别数）
 - 用户活跃度统计
 - 反馈数据统计
@@ -65,6 +73,7 @@
 - 支持数据导出预览和下载
 
 #### F009 - 用户管理
+
 - 管理员可查看所有用户列表
 - 支持用户锁定/解锁功能
 - 支持重置用户密码
@@ -73,6 +82,7 @@
 ### 游戏化学习模块
 
 #### F010 - 分类挑战游戏
+
 - 趣味垃圾分类挑战游戏
 - 实时得分和连击系统
 - 错题深度分析报告
@@ -80,16 +90,19 @@
 - 答题实时记录
 
 #### F011 - 勋章墙系统
+
 - 多种环保主题勋章
 - 成就解锁机制
 - 勋章展示和收集
 
 #### F012 - 碳足迹票据
+
 - 环保贡献证书生成
 - 碳减排数据统计
 - 支持保存为图片分享
 
 #### F013 - 盲盒系统
+
 - 消耗碳积分抽取环保生物卡片
 - 多种稀有度卡片（UR/SSR/SR/N）
 - 卡片收集展示
@@ -98,6 +111,7 @@
 ### AI 智能服务模块
 
 #### F014 - AI 智能助手
+
 - Glassmorphism 风格浮窗设计
 - 支持垃圾识别相关问答
 - 支持查看上传图片并回答问题
@@ -105,10 +119,17 @@
 - 快捷问题按钮
 
 #### F015 - 智能运维诊断
+
 - 系统健康状态监控
 - 数据库连接检测
 - 模型加载状态检测
 - 系统资源使用监控
+
+#### F016 - 回收站点地图
+
+- 附近回收点地图展示
+- 回收站点位置查询
+- 导航功能支持
 
 ## 🏗️ 项目结构
 
@@ -139,7 +160,7 @@
 │   │   ├── analytics.html     # 用户数据分析页
 │   │   ├── GameStation.html   # 分类挑战游戏页
 │   │   ├── AnalyticsDashboard.html # 智能运维诊断页
-│   │   └── deployment.html    # 部署说明页
+│   │   └── map.html           # 回收站点地图页
 │   ├── static/                # 静态文件目录
 │   │   ├── background/        # 背景图片和卡片图片
 │   │   └── feedback_images/   # 反馈图片存储
@@ -176,16 +197,18 @@ pip install -r requirements.txt
 ### 数据库配置
 
 1. 创建 MySQL 数据库：
+
 ```sql
 CREATE DATABASE waste CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. 修改 `config.py` 中的数据库连接配置：
+1. 修改 `config.py` 中的数据库连接配置：
+
 ```python
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:password@localhost/waste'
 ```
 
-3. 初始化数据库表（首次运行自动创建）
+1. 初始化数据库表（首次运行自动创建）
 
 ### 运行项目
 
@@ -208,71 +231,71 @@ python run.py
 
 ### 用户表
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | Integer | 主键 |
-| username | String(80) | 用户名（唯一） |
-| password_hash | String(255) | 密码哈希（SHA256） |
-| phone | String(20) | 手机号（唯一） |
-| email | String(120) | 邮箱（唯一） |
-| is_admin | Boolean | 是否为管理员 |
-| login_attempts | Integer | 登录失败次数 |
-| locked_until | DateTime | 锁定截止时间 |
-| created_at | DateTime | 创建时间 |
-| updated_at | DateTime | 更新时间 |
+| 字段名             | 类型          | 说明           |
+| --------------- | ----------- | ------------ |
+| id              | Integer     | 主键           |
+| username        | String(80)  | 用户名（唯一）      |
+| password\_hash  | String(255) | 密码哈希（SHA256） |
+| phone           | String(20)  | 手机号（唯一）      |
+| email           | String(120) | 邮箱（唯一）       |
+| is\_admin       | Boolean     | 是否为管理员       |
+| login\_attempts | Integer     | 登录失败次数       |
+| locked\_until   | DateTime    | 锁定截止时间       |
+| created\_at     | DateTime    | 创建时间         |
+| updated\_at     | DateTime    | 更新时间         |
 
-### 验证码表 (verification_codes)
+### 验证码表 (verification\_codes)
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | Integer | 主键 |
-| contact | String(120) | 手机号或邮箱 |
-| code | String(10) | 验证码 |
-| code_type | String(20) | 验证码类型 |
-| created_at | DateTime | 创建时间 |
-| expires_at | DateTime | 过期时间 |
-| used | Boolean | 是否已使用 |
+| 字段名         | 类型          | 说明     |
+| ----------- | ----------- | ------ |
+| id          | Integer     | 主键     |
+| contact     | String(120) | 手机号或邮箱 |
+| code        | String(10)  | 验证码    |
+| code\_type  | String(20)  | 验证码类型  |
+| created\_at | DateTime    | 创建时间   |
+| expires\_at | DateTime    | 过期时间   |
+| used        | Boolean     | 是否已使用  |
 
-### 识别记录表 (recognition_records)
+### 识别记录表 (recognition\_records)
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | Integer | 主键 |
-| user_id | Integer | 用户ID |
-| image_path | String(255) | 图片路径 |
-| predicted_category | String(50) | 预测分类 |
-| confidence | Float | 置信度 |
-| is_correct | Boolean | 是否正确 |
-| real_category | String(50) | 真实分类 |
-| created_at | DateTime | 创建时间 |
+| 字段名                 | 类型          | 说明   |
+| ------------------- | ----------- | ---- |
+| id                  | Integer     | 主键   |
+| user\_id            | Integer     | 用户ID |
+| image\_path         | String(255) | 图片路径 |
+| predicted\_category | String(50)  | 预测分类 |
+| confidence          | Float       | 置信度  |
+| is\_correct         | Boolean     | 是否正确 |
+| real\_category      | String(50)  | 真实分类 |
+| created\_at         | DateTime    | 创建时间 |
 
 ### 反馈表
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | Integer | 主键 |
-| user_id | Integer | 用户ID |
-| record_id | Integer | 识别记录ID |
-| garbage_name | String(100) | 垃圾名称 |
-| wrong_category | String(50) | 错误分类 |
-| real_category | String(50) | 正确分类 |
-| image_path | String(255) | 图片路径 |
-| confidence | Float | 置信度 |
-| note | Text | 备注 |
-| status | String(20) | 状态 |
-| created_at | DateTime | 创建时间 |
-| processed_at | DateTime | 处理时间 |
+| 字段名             | 类型          | 说明     |
+| --------------- | ----------- | ------ |
+| id              | Integer     | 主键     |
+| user\_id        | Integer     | 用户ID   |
+| record\_id      | Integer     | 识别记录ID |
+| garbage\_name   | String(100) | 垃圾名称   |
+| wrong\_category | String(50)  | 错误分类   |
+| real\_category  | String(50)  | 正确分类   |
+| image\_path     | String(255) | 图片路径   |
+| confidence      | Float       | 置信度    |
+| note            | Text        | 备注     |
+| status          | String(20)  | 状态     |
+| created\_at     | DateTime    | 创建时间   |
+| processed\_at   | DateTime    | 处理时间   |
 
-### 游戏错误记录表 (game_mistakes)
+### 游戏错误记录表 (game\_mistakes)
 
-| 字段名 | 类型 | 说明 |
-|--------|------|------|
-| id | Integer | 主键 |
-| user_id | Integer | 用户ID |
-| item_name | String(100) | 物品名称 |
-| wrong_label | Integer | 错误分类标签 |
-| correct_label | Integer | 正确分类标签 |
-| created_at | DateTime | 创建时间 |
+| 字段名            | 类型          | 说明     |
+| -------------- | ----------- | ------ |
+| id             | Integer     | 主键     |
+| user\_id       | Integer     | 用户ID   |
+| item\_name     | String(100) | 物品名称   |
+| wrong\_label   | Integer     | 错误分类标签 |
+| correct\_label | Integer     | 正确分类标签 |
+| created\_at    | DateTime    | 创建时间   |
 
 ## 🔐 安全特性
 
@@ -289,46 +312,47 @@ python run.py
 
 ### 页面路由
 
-| 路由 | 方法 | 说明 |
-|------|------|------|
-| `/` | GET | 首页 |
-| `/register` | GET/POST | 用户注册 |
-| `/login` | GET/POST | 用户登录（支持用户名/邮箱） |
-| `/admin/login` | GET/POST | 管理员登录 |
-| `/forgot-password` | GET/POST | 密码找回 |
-| `/dashboard` | GET | 用户中心 |
-| `/admin/dashboard` | GET | 管理员中心 |
-| `/recognition` | GET | 图片识别页 |
-| `/knowledge` | GET | 知识库页 |
-| `/feedback` | GET | 反馈管理页 |
-| `/admin/analytics` | GET | 数据统计页 |
-| `/admin/users` | GET | 用户管理页 |
-| `/GameStation` | GET | 分类挑战游戏页 |
-| `/AnalyticsDashboard` | GET | 智能运维诊断页 |
-| `/logout` | GET/POST | 退出登录 |
+| 路由                    | 方法       | 说明             |
+| --------------------- | -------- | -------------- |
+| `/`                   | GET      | 首页             |
+| `/register`           | GET/POST | 用户注册           |
+| `/login`              | GET/POST | 用户登录（支持用户名/邮箱） |
+| `/admin/login`        | GET/POST | 管理员登录          |
+| `/forgot-password`    | GET/POST | 密码找回           |
+| `/dashboard`          | GET      | 用户中心           |
+| `/admin/dashboard`    | GET      | 管理员中心          |
+| `/recognition`        | GET      | 图片识别页          |
+| `/knowledge`          | GET      | 知识库页           |
+| `/feedback`           | GET      | 反馈管理页          |
+| `/admin/analytics`    | GET      | 数据统计页          |
+| `/admin/users`        | GET      | 用户管理页          |
+| `/GameStation`        | GET      | 分类挑战游戏页（环保训练）   |
+| `/AnalyticsDashboard` | GET      | 智能运维诊断页        |
+| `/map`                | GET      | 回收站点地图页        |
+| `/logout`             | GET/POST | 退出登录           |
 
 ### API 接口
 
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/send-verification-code` | POST | 发送验证码 |
-| `/recognize` | POST | 图片识别 |
-| `/confirm-recognition` | POST | 确认识别结果 |
-| `/submit-feedback` | POST | 提交反馈 |
-| `/api/feedback/list` | GET | 获取反馈列表 |
-| `/api/feedback/details/<id>` | GET | 获取反馈详情 |
-| `/api/feedback/process/<id>` | POST | 处理反馈 |
-| `/api/feedback/undo/<id>` | POST | 撤回处理 |
-| `/api/users/lock/<id>` | POST | 锁定用户 |
-| `/api/users/reset-password/<id>` | POST | 重置密码 |
-| `/api/users/delete/<id>` | POST | 删除用户 |
-| `/api/predict` | POST | 预测垃圾分类 |
-| `/api/log_game_mistake` | POST | 记录游戏错误 |
-| `/api/get_ai_analysis` | POST | 获取AI分析报告 |
-| `/api/draw_card` | GET | 抽取盲盒卡片 |
-| `/api/ai_chat` | POST | AI智能问答 |
-| `/api/export/preview` | GET | 导出数据预览 |
-| `/api/export/csv` | GET | 导出CSV文件 |
+| 接口                               | 方法   | 说明       |
+| -------------------------------- | ---- | -------- |
+| `/send-verification-code`        | POST | 发送验证码    |
+| `/recognize`                     | POST | 图片识别     |
+| `/confirm-recognition`           | POST | 确认识别结果   |
+| `/submit-feedback`               | POST | 提交反馈     |
+| `/api/feedback/list`             | GET  | 获取反馈列表   |
+| `/api/feedback/details/<id>`     | GET  | 获取反馈详情   |
+| `/api/feedback/process/<id>`     | POST | 处理反馈     |
+| `/api/feedback/undo/<id>`        | POST | 撤回处理     |
+| `/api/users/lock/<id>`           | POST | 锁定用户     |
+| `/api/users/reset-password/<id>` | POST | 重置密码     |
+| `/api/users/delete/<id>`         | POST | 删除用户     |
+| `/api/predict`                   | POST | 预测垃圾分类   |
+| `/api/log_game_mistake`          | POST | 记录游戏错误   |
+| `/api/get_ai_analysis`           | POST | 获取AI分析报告 |
+| `/api/draw_card`                 | GET  | 抽取盲盒卡片   |
+| `/api/ai_chat`                   | POST | AI智能问答   |
+| `/api/export/preview`            | GET  | 导出数据预览   |
+| `/api/export/csv`                | GET  | 导出CSV文件  |
 
 ## 🤖 AI 服务配置
 
@@ -451,20 +475,21 @@ gunicorn -w 4 -b 0.0.0.0:5000 run:app
 
 ## 🎨 页面预览
 
-| 页面 | 说明 |
-|------|------|
-| 首页 | 系统入口，展示核心功能和环保科普 |
-| 登录页 | 支持用户名/邮箱登录，图形验证码 |
-| 注册页 | 手机号/邮箱验证码注册 |
-| 图片识别页 | 上传图片或拍照识别，AI助手浮窗 |
-| 知识库页 | 四大垃圾分类知识展示 |
-| 分类挑战 | 趣味游戏，勋章墙，碳足迹票据，盲盒 |
-| 用户中心 | 个人信息和识别历史 |
-| 管理员仪表盘 | 系统概览和用户统计 |
-| 反馈管理 | 用户反馈列表和处理 |
-| 数据统计 | 识别数据可视化分析，导出功能 |
-| 用户管理 | 用户列表和账户管理 |
-| 智能运维 | 系统健康状态监控和诊断 |
+| 页面     | 说明                |
+| ------ | ----------------- |
+| 首页     | 系统入口，展示核心功能和环保科普  |
+| 登录页    | 支持用户名/邮箱登录，图形验证码  |
+| 注册页    | 手机号/邮箱验证码注册       |
+| 图片识别页  | 上传图片或拍照识别，AI助手浮窗  |
+| 知识库页   | 四大垃圾分类知识展示        |
+| 分类挑战   | 趣味游戏，勋章墙，碳足迹票据，盲盒 |
+| 回收站点   | 附近回收点地图查询        |
+| 用户中心   | 个人信息和识别历史         |
+| 管理员仪表盘 | 系统概览和用户统计         |
+| 反馈管理   | 用户反馈列表和处理         |
+| 数据统计   | 识别数据可视化分析，导出功能    |
+| 用户管理   | 用户列表和账户管理         |
+| 智能运维   | 系统健康状态监控和诊断       |
 
 ## 🎮 游戏化功能
 
@@ -476,23 +501,23 @@ gunicorn -w 4 -b 0.0.0.0:5000 run:app
 
 ### 勋章系统
 
-| 勋章 | 名称 | 获取条件 |
-|------|------|----------|
-| 🌱 | 初级分类员 | 首次正确分类 |
-| ⚡ | 连击大师 | 连续10次正确 |
-| ☣️ | 剧毒终结者 | 正确分类5件有害垃圾 |
-| 🌍 | 碳中和小能手 | 得分超过300分 |
-| 💯 | 完美主义 | 单局全部正确 |
-| 🏆 | 冠军 | 打破最高分记录 |
+| 勋章 | 名称     | 获取条件       |
+| -- | ------ | ---------- |
+| 🌱 | 初级分类员  | 首次正确分类     |
+| ⚡  | 连击大师   | 连续10次正确    |
+| ☣️ | 剧毒终结者  | 正确分类5件有害垃圾 |
+| 🌍 | 碳中和小能手 | 得分超过300分   |
+| 💯 | 完美主义   | 单局全部正确     |
+| 🏆 | 冠军     | 打破最高分记录    |
 
 ### 盲盒卡片
 
-| 稀有度 | 卡片 | 概率 |
-|--------|------|------|
-| UR | 大熊猫 | 5% |
+| 稀有度 | 卡片       | 概率    |
+| --- | -------- | ----- |
+| UR  | 大熊猫      | 5%    |
 | SSR | 华南虎、极地企鹅 | 15%×2 |
-| SR | 长江江豚、绿孔雀 | 15%×2 |
-| N | 环保卫士 | 35% |
+| SR  | 长江江豚、绿孔雀 | 15%×2 |
+| N   | 环保卫士     | 35%   |
 
 ## 📌 注意事项
 
@@ -511,7 +536,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 run:app
 - [x] 盲盒系统
 - [x] 勋章墙
 - [x] 碳足迹票据
-- [ ] 附近回收点智能推荐（地图功能）
+- [x] 回收站点地图功能
 - [ ] 用户识别历史记录详情
 - [ ] 模型在线训练和更新
 - [ ] 移动端适配优化
@@ -527,6 +552,6 @@ MIT License
 
 垃圾图片分类系统开发团队
 
----
+***
 
 **最后更新时间**：2026年3月
