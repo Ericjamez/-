@@ -5,7 +5,11 @@ Flask-Mail==0.9.1
 email-validator==2.1.0.post1
 Werkzeug==3.0.1
 pymysql==1.0.3
-alibabacloud-dysmsapi20170525==2.0.24
 Pillow==10.1.0
 torch==2.1.0
 torchvision==0.16.0
+requests==2.31.0
+transformers==4.36.0
+rapidfuzz==3.6.1
+pandas==2.1.4
+numpy==1.26.2
