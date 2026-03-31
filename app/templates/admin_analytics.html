@@ -632,16 +632,6 @@
             font-size: 14px;
         }
 
-        .status-correct {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        .status-error {
-            color: var(--danger);
-            font-weight: 600;
-        }
-
         .rank-badge {
             display: inline-flex;
             align-items: center;
@@ -779,11 +769,6 @@
                 <li>
                     <a href="{{ url_for('auth.admin_analytics') }}">
                         <span>📊</span> 数据统计
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('auth.analytics_dashboard') }}">
-                        <span>✨</span> 智能运维
                     </a>
                 </li>
                 <li>
@@ -1064,7 +1049,7 @@
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead id="preview-thead">
+                        <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>垃圾名称</th>
@@ -1079,8 +1064,8 @@
                             <tr>
                                 <td colspan="7">
                                     <div class="empty-state">
-                                        <div class="emoji">⏳</div>
-                                        <p>加载中...</p>
+                                        <div class="emoji">📄</div>
+                                        <p>请设置条件后点击"导出数据"预览</p>
                                     </div>
                                 </td>
                             </tr>
@@ -1102,14 +1087,6 @@
             initDateInputs();
             loadStats();
             queryRecords();
-            loadExportPreview();
-            
-            document.getElementById('export-start-date').addEventListener('change', loadExportPreview);
-            document.getElementById('export-end-date').addEventListener('change', loadExportPreview);
-            
-            document.querySelectorAll('#export-tab input[type="checkbox"]').forEach(cb => {
-                cb.addEventListener('change', loadExportPreview);
-            });
         });
 
         function initDateInputs() {
@@ -1125,51 +1102,6 @@
             document.getElementById('stats-end-date').value = formatDate(today);
             document.getElementById('export-start-date').value = formatDate(thirtyDaysAgo);
             document.getElementById('export-end-date').value = formatDate(today);
-        }
-        
-        async function loadExportPreview() {
-            const startDate = document.getElementById('export-start-date').value;
-            const endDate = document.getElementById('export-end-date').value;
-            
-            const fields = [];
-            if (document.getElementById('field-id').checked) fields.push('id');
-            if (document.getElementById('field-garbage-name').checked) fields.push('garbage_name');
-            if (document.getElementById('field-predicted-category').checked) fields.push('predicted_category');
-            if (document.getElementById('field-actual-category').checked) fields.push('actual_category');
-            if (document.getElementById('field-confidence').checked) fields.push('confidence');
-            if (document.getElementById('field-is-correct').checked) fields.push('is_correct');
-            if (document.getElementById('field-created-at').checked) fields.push('created_at');
-            
-            if (fields.length === 0) {
-                const tbody = document.querySelector('#export-tab tbody');
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7">
-                            <div class="empty-state">
-                                <div class="emoji">📄</div>
-                                <p>请至少选择一个字段</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            const params = new URLSearchParams();
-            if (startDate) params.append('start_date', startDate);
-            if (endDate) params.append('end_date', endDate);
-            params.append('fields', fields.join(','));
-            
-            try {
-                const response = await fetch(`/api/analytics/preview?${params.toString()}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    updatePreviewTable(data.data, fields);
-                }
-            } catch (error) {
-                console.error('加载预览数据失败:', error);
-            }
         }
 
         function switchTab(tabName) {
@@ -1465,8 +1397,8 @@
                 const params = new URLSearchParams();
                 if (startDate) params.append('start_date', startDate);
                 if (endDate) params.append('end_date', endDate);
-                params.append('fields', fields.join(','));
                 params.append('format', format);
+                params.append('fields', fields.join(','));
                 
                 const response = await fetch(`/api/analytics/export?${params.toString()}`);
                 
@@ -1493,58 +1425,6 @@
                 showToast('导出数据失败', 'error');
             }
         }
-        
-        function updatePreviewTable(data, fields) {
-            const thead = document.getElementById('preview-thead');
-            const tbody = document.querySelector('#export-tab tbody');
-            
-            const fieldNames = {
-                'id': 'ID',
-                'garbage_name': '垃圾名称',
-                'predicted_category': '预测分类',
-                'actual_category': '实际分类',
-                'confidence': '置信度',
-                'is_correct': '识别结果',
-                'created_at': '识别时间'
-            };
-            
-            let headerHtml = '<tr>';
-            fields.forEach(field => {
-                headerHtml += `<th>${fieldNames[field] || field}</th>`;
-            });
-            headerHtml += '</tr>';
-            thead.innerHTML = headerHtml;
-            
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="${fields.length}">
-                            <div class="empty-state">
-                                <div class="emoji">📄</div>
-                                <p>暂无数据</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            let html = '';
-            data.forEach(row => {
-                html += '<tr>';
-                fields.forEach(field => {
-                    if (field === 'is_correct') {
-                        const resultClass = row[field] === '正确' ? 'status-correct' : (row[field] === '错误' ? 'status-error' : '');
-                        html += `<td><span class="${resultClass}">${row[field] || '-'}</span></td>`;
-                    } else {
-                        html += `<td>${row[field] || '-'}</td>`;
-                    }
-                });
-                html += '</tr>';
-            });
-            
-            tbody.innerHTML = html;
-        }
 
         function downloadFile(content, filename, type) {
             const blob = new Blob([content], { type });
@@ -1563,7 +1443,6 @@
                 cb.checked = true;
             });
             document.getElementById('export-format').value = 'csv';
-            loadExportPreview();
             showToast('已重置', 'success');
         }
 

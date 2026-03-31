@@ -357,130 +357,10 @@
         font-size: 14px;
     }
     
-    /* 环保小科普卡片样式 */
-    .eco-tips-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
-        margin-top: 40px;
-    }
-    
-    .eco-tip-card {
-        background: white;
-        border-radius: 20px;
-        padding: 28px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .eco-tip-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #4CAF50, #81C784);
-    }
-    
-    .eco-tip-card:nth-child(2)::before {
-        background: linear-gradient(90deg, #66BB6A, #A5D6A7);
-    }
-    
-    .eco-tip-card:nth-child(3)::before {
-        background: linear-gradient(90deg, #FF7043, #FFAB91);
-    }
-    
-    .eco-tip-card:nth-child(4)::before {
-        background: linear-gradient(90deg, #42A5F5, #90CAF9);
-    }
-    
-    .eco-tip-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-        border-color: #e8f5e9;
-    }
-    
-    .eco-tip-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-        display: inline-block;
-        animation: float 3s ease-in-out infinite;
-    }
-    
-    .eco-tip-card:nth-child(1) .eco-tip-icon { animation-delay: 0s; }
-    .eco-tip-card:nth-child(2) .eco-tip-icon { animation-delay: 0.5s; }
-    .eco-tip-card:nth-child(3) .eco-tip-icon { animation-delay: 1s; }
-    .eco-tip-card:nth-child(4) .eco-tip-icon { animation-delay: 1.5s; }
-    
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
-    }
-    
-    .eco-tip-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #2E7D32;
-        margin-bottom: 12px;
-    }
-    
-    .eco-tip-content {
-        color: #546E7A;
-        font-size: 14px;
-        line-height: 1.7;
-        margin-bottom: 16px;
-    }
-    
-    .eco-tip-highlight {
-        background: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 100%);
-        padding: 12px 16px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        font-size: 14px;
-        color: #2E7D32;
-        font-weight: 500;
-    }
-    
-    .eco-tip-highlight.eco-tip-danger {
-        background: linear-gradient(135deg, #FFEBEE 0%, #FFF3E0 100%);
-        color: #D32F2F;
-    }
-    
-    .highlight-number {
-        font-size: 22px;
-        font-weight: 800;
-        color: #1B5E20;
-    }
-    
-    .eco-tip-danger .highlight-number {
-        color: #C62828;
-    }
-    
-    .highlight-divider {
-        color: #81C784;
-        font-weight: 300;
-    }
-    
-    .eco-tip-danger .highlight-divider {
-        color: #EF9A9A;
-    }
-    
-    .highlight-arrow {
-        color: #4CAF50;
-        font-size: 18px;
-    }
-    
     /* 底部信息样式 - 现代简约 */
     .footer {
         background: white;
-        padding: 15px 0 10px;
+        padding: 40px 0 20px;
         box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
     }
     
@@ -494,7 +374,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 40px;
-        margin-bottom: 5px;
+        margin-bottom: 40px;
     }
     
     .footer-column {
@@ -533,7 +413,7 @@
     
     .footer-copyright {
         text-align: center;
-        padding-top: 5px;
+        padding-top: 20px;
         border-top: 1px solid #e9ecef;
         color: #6c757d;
         font-size: 14px;
@@ -618,33 +498,6 @@
             gap: 32px;
         }
         
-        .eco-tips-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-        
-        .eco-tip-card {
-            padding: 20px;
-        }
-        
-        .eco-tip-icon {
-            font-size: 36px;
-        }
-        
-        .eco-tip-title {
-            font-size: 16px;
-        }
-        
-        .eco-tip-highlight {
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 13px;
-        }
-        
-        .highlight-number {
-            font-size: 18px;
-        }
-        
         .footer-content {
             flex-direction: column;
             gap: 32px;
@@ -713,17 +566,12 @@
             </li>
             <li>
                 <a href="{{ url_for('auth.knowledge') }}">
-                    <span>📖</span> 语义识别
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.game_station') }}">
-                    <span>🎮</span> 环保训练
+                    <span>🧠</span> 知识图谱
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('auth.deployment') }}">
-                    <span>🗺️</span> 回收站点
+                    <span>🚀</span> 附件回收站点
                 </a>
             </li>
             <li>
@@ -784,7 +632,7 @@
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">🔍</div>
-                <h3>图片识别</h3>
+                <h3>智能图片识别</h3>
                 <p>上传图片或拍照，智能识别垃圾分类，一秒出结果。系统采用先进的深度学习算法，准确率高达80%以上。</p>
                 {% if 'user_id' in session %}
                 <a href="{{ url_for('auth.recognition') }}" class="feature-link">立即体验</a>
@@ -792,90 +640,68 @@
             </div>
             
             <div class="feature-card">
-                <div class="feature-icon">📖</div>
-                <h3>语义识别</h3>
-                <p>输入垃圾名称或描述，智能语义分析匹配垃圾分类。支持模糊搜索和同义词识别，快速获取分类信息。</p>
+                <div class="feature-icon">🧠</div>
+                <h3>知识图谱</h3>
+                <p>构建垃圾分类知识图谱，提供详细的分类标准和处理方法。支持按类别、地区等维度查询，助力垃圾分类知识普及。</p>
                 {% if 'user_id' in session %}
                 <a href="{{ url_for('auth.knowledge') }}" class="feature-link">探索知识</a>
                 {% endif %}
             </div>
             
             <div class="feature-card">
-                <div class="feature-icon">🎮</div>
-                <h3>环保训练</h3>
-                <p>趣味游戏化学习模式，通过限时分类挑战提升垃圾分类知识。记录最高分数，解锁环保勋章，让学习更有趣！</p>
+                <div class="feature-icon">📝</div>
+                <h3>反馈学习</h3>
+                <p>用户可对识别结果进行反馈，系统通过主动学习不断优化模型。管理员可查看反馈记录，进行人工审核和模型更新。</p>
                 {% if 'user_id' in session %}
-                <a href="{{ url_for('auth.game_station') }}" class="feature-link">开始挑战</a>
+                <a href="{{ url_for('auth.feedback') }}" class="feature-link">参与反馈</a>
                 {% endif %}
             </div>
             
             <div class="feature-card">
-                <div class="feature-icon">🗺️</div>
-                <h3>回收站点</h3>
-                <p>查看附近的垃圾分类回收站点，获取站点地址、营业时间等信息。方便用户找到最近的垃圾投放点。</p>
+                <div class="feature-icon">🚀</div>
+                <h3>部署实验室</h3>
+                <p>提供模型部署和性能测试环境。支持不同模型版本的对比测试，优化部署参数，确保系统在各种环境下的稳定运行。</p>
                 {% if 'user_id' in session %}
-                <a href="{{ url_for('auth.deployment') }}" class="feature-link">查看站点</a>
+                <a href="{{ url_for('auth.deployment') }}" class="feature-link">进入实验室</a>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- 环保小科普 -->
+<!-- 如何使用 -->
 <div class="usage">
     <div class="usage-container">
         <div class="section-header">
-            <h2 class="section-title">环保小科普</h2>
+            <h2 class="section-title">使用流程</h2>
             <p class="section-subtitle">
-                了解垃圾分类知识，让环保成为生活习惯
+                简单四步，轻松掌握垃圾分类
             </p>
         </div>
         
-        <div class="eco-tips-grid">
-            <div class="eco-tip-card">
-                <div class="eco-tip-icon">♻️</div>
-                <h3 class="eco-tip-title">可回收物的"重生"之旅</h3>
-                <p class="eco-tip-content">一张废纸被回收后，会经历碎浆→脱墨→打浆→抄纸，最终变成新的纸张或纸箱。</p>
-                <div class="eco-tip-highlight">
-                    <span class="highlight-number">17</span> 棵树
-                    <span class="highlight-divider">|</span>
-                    <span class="highlight-number">200</span> 吨水
-                </div>
+        <div class="usage-steps">
+            <div class="usage-step">
+                <div class="step-number">1</div>
+                <h3 class="step-title">登录系统</h3>
+                <p class="step-description">使用您的账号登录系统，或注册新账号。</p>
             </div>
             
-            <div class="eco-tip-card">
-                <div class="eco-tip-icon">🌱</div>
-                <h3 class="eco-tip-title">厨余垃圾变肥料</h3>
-                <p class="eco-tip-content">厨余垃圾经过厌氧发酵，能变成有机肥料，让土壤更肥沃。<br>&nbsp;</p>
-                <div class="eco-tip-highlight">
-                    <span class="highlight-number">1</span> 吨厨余
-                    <span class="highlight-arrow">→</span>
-                    <span class="highlight-number">0.3</span> 吨有机肥
-                </div>
+            <div class="usage-step">
+                <div class="step-number">2</div>
+                <h3 class="step-title">上传图片</h3>
+                <p class="step-description">在图片识别页面上传垃圾图片，或直接拍照。</p>
             </div>
             
-            <div class="eco-tip-card">
-                <div class="eco-tip-icon">⚠️</div>
-                <h3 class="eco-tip-title">有害垃圾的危害</h3>
-                <p class="eco-tip-content">一节一号电池烂在土里，能让土壤永久失去利用价值，所以一定要投放到有害垃圾收集点。</p>
-                <div class="eco-tip-highlight eco-tip-danger">
-                    <span class="highlight-number">1</span> 节电池
-                    <span class="highlight-divider">=</span>
-                    <span class="highlight-number">1</span> m² 土壤报废
-                </div>
+            <div class="usage-step">
+                <div class="step-number">3</div>
+                <h3 class="step-title">查看结果</h3>
+                <p class="step-description">系统自动识别垃圾类型，并提供详细的分类信息。</p>
             </div>
             
-            <div class="eco-tip-card">
-                <div class="eco-tip-icon">👕</div>
-                <h3 class="eco-tip-title">塑料瓶的循环利用</h3>
-                <p class="eco-tip-content">一个PET塑料瓶回收后，可纺成纤维做成衣服，减少石油消耗。
-                    <br>&nbsp;
-                </p>
-                <div class="eco-tip-highlight">
-                    <span class="highlight-number">5</span> 个瓶子
-                    <span class="highlight-arrow">→</span>
-                    <span class="highlight-number">1</span> 件T恤
-                </div>
+            <div class="usage-step">
+                <div class="step-number">4</div>
+                <h3 class="step-title">学习知识</h3>
+                <p class="step-description">通过知识图谱了解更多垃圾分类知识，提升环保意识。</p>
             </div>
         </div>
     </div>
@@ -901,8 +727,7 @@
                     <li><a href="{{ url_for('auth.index') }}">首页</a></li>
                     {% if 'user_id' in session %}
                     <li><a href="{{ url_for('auth.recognition') }}">图片识别</a></li>
-                    <li><a href="{{ url_for('auth.knowledge') }}">语义识别</a></li>
-                    <li><a href="{{ url_for('auth.game_station') }}">环保训练</a></li>
+                    <li><a href="{{ url_for('auth.knowledge') }}">知识图谱</a></li>
                     {% else %}
                     <li><a href="{{ url_for('auth.login') }}">登录</a></li>
                     <li><a href="{{ url_for('auth.register') }}">注册</a></li>
