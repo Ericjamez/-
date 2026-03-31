@@ -189,3 +189,65 @@ class RecognitionRecord(db.Model):
     
     def __repr__(self):
         return f'<RecognitionRecord {self.id} - {self.garbage_name}>'
+
+
+class GarbageItem(db.Model):
+    """垃圾物品主表（增强版）"""
+    __tablename__ = 'garbage_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    label = db.Column(db.Integer, nullable=False, index=True)
+    synonyms = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=get_china_time, nullable=False)
+    
+    def __repr__(self):
+        return f'<GarbageItem {self.name}>'
+
+
+class GuideComponent(db.Model):
+    """模块化投放建议组件表"""
+    __tablename__ = 'guide_components'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    category_label = db.Column(db.Integer, nullable=False, index=True)
+    component_type = db.Column(db.Enum('action', 'safety', 'tip', 'warning', 'eco'), nullable=False)
+    text_template = db.Column(db.String(300), nullable=False)
+    priority = db.Column(db.Integer, default=50)
+    is_randomizable = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<GuideComponent category={self.category_label} type={self.component_type}>'
+
+
+class ItemSpecificGuide(db.Model):
+    """特定物品专属完整建议"""
+    __tablename__ = 'item_specific_guides'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('garbage_items.id', ondelete='CASCADE'), nullable=False, unique=True)
+    full_guide = db.Column(db.Text, nullable=False)
+    
+    item = db.relationship('GarbageItem', backref=db.backref('specific_guide', uselist=False))
+    
+    def __repr__(self):
+        return f'<ItemSpecificGuide item_id={self.item_id}>'
+
+
+class GameMistakesStat(db.Model):
+    """游戏错题统计表"""
+    __tablename__ = 'game_mistakes_stats'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(100), nullable=False, index=True)
+    correct_label = db.Column(db.Integer, nullable=False)
+    wrong_label = db.Column(db.Integer, nullable=False)
+    occurrence_count = db.Column(db.Integer, default=1, nullable=False)
+    last_seen = db.Column(db.DateTime, default=get_china_time, onupdate=get_china_time, nullable=False)
+    
+    __table_args__ = (
+        db.UniqueConstraint('item_name', 'wrong_label', name='unique_mistake'),
+    )
+    
+    def __repr__(self):
+        return f'<GameMistakesStat {self.item_name}>'

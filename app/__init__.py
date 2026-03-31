@@ -15,6 +15,13 @@ def create_app(config_class=Config):
     # 初始化邮箱服务
     mail.init_app(app)
     
+    # 初始化 BERT 模型
+    try:
+        from app.ai_service import init_bert_model
+        init_bert_model(app)
+    except Exception as e:
+        print(f"BERT 模型初始化失败: {e}")
+    
     # 创建所有表
     with app.app_context():
         db.create_all()
